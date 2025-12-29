@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/order_model.dart';
+import '../../providers/order_provider.dart'; // [NEW]
 import '../../theme/app_theme.dart';
 import '../product/product_detail_screen.dart'; // Assuming we might want to nav back to product
 import '../../models/product_model.dart'; // For type safety if needed, though we primarily use CartItem
@@ -388,6 +390,21 @@ class OrderDetailScreen extends StatelessWidget {
                child: const Text('Liên hệ'),
              ),
              const SizedBox(width: 8),
+             
+             // [NEW] Cancel Button for Pending Orders
+             if (order.status == OrderStatus.pending)
+               Padding(
+                 padding: const EdgeInsets.only(left: 8.0),
+                 child: OutlinedButton(
+                   onPressed: () => _confirmCancelOrder(context),
+                   style: OutlinedButton.styleFrom(
+                     side: const BorderSide(color: Colors.red), 
+                     foregroundColor: Colors.red
+                   ),
+                   child: const Text('Hủy đơn hàng'),
+                 ),
+               ),
+
              if (order.status == OrderStatus.shipping)
                 ElevatedButton(
                   onPressed: () {},
@@ -402,6 +419,44 @@ class OrderDetailScreen extends StatelessWidget {
                 ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmCancelOrder(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hủy đơn hàng?'),
+        content: const Text('Bạn có chắc chắn muốn hủy đơn hàng này không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Không'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx); // Close dialog
+              try {
+                // Assuming provider is available in context. 
+                // Since OrderDetailScreen is pushed, it should access inherited providers.
+                // We need to import provider package.
+                // But this widget is stateless and might need a Builder or check import.
+                // Assuming 'provider' is imported at top.
+                await context.read<OrderProvider>().cancelOrder(order.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã hủy đơn hàng')));
+                  Navigator.pop(context); // Go back to list
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                }
+              }
+            },
+            child: const Text('Hủy đơn', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

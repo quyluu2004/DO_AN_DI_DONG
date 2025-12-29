@@ -44,8 +44,42 @@ class OrderProvider extends ChangeNotifier {
       _orders = snapshot.docs.map((doc) => OrderModel.fromDoc(doc)).toList();
     } catch (e) {
       print(e);
-      _error = e.toString(); // [NEW] Capture error
+      _error = e.toString();
       _orders = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> cancelOrder(String orderId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _db.collection('orders').doc(orderId).update({
+        'status': OrderStatus.cancelled.name,
+      });
+
+      final index = _orders.indexWhere((o) => o.id == orderId);
+      if (index != -1) {
+        // Create new object with updated status to ensure immutability/UI update
+        final oldOrder = _orders[index];
+        _orders[index] = OrderModel(
+          id: oldOrder.id,
+          userId: oldOrder.userId,
+          items: oldOrder.items,
+          totalAmount: oldOrder.totalAmount,
+          shippingAddress: oldOrder.shippingAddress,
+          status: OrderStatus.cancelled, // Updated
+          paymentMethod: oldOrder.paymentMethod,
+          createdAt: oldOrder.createdAt,
+          discountAmount: oldOrder.discountAmount,
+          couponCode: oldOrder.couponCode,
+        );
+      }
+    } catch (e) {
+      print(e);
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
