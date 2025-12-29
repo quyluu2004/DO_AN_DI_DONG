@@ -17,6 +17,7 @@ import '../search/search_screen.dart';
 import '../search/search_screen.dart';
 import '../cart/cart_screen.dart';
 import '../try_on/virtual_try_on_screen.dart'; // [UPDATED]
+import '../social_feed/social_feed_screen.dart'; // [NEW]
 
 class FashionHomePage extends StatefulWidget {
   const FashionHomePage({super.key});
@@ -35,7 +36,7 @@ class _FashionHomePageState extends State<FashionHomePage> {
     super.initState();
     _pages = [
       const _HomeTab(),
-      const Center(child: Text('Danh mục')), // Placeholder or CategoryScreen
+      const SocialFeedScreen(), // [UPDATED]
       const VirtualTryOnScreen(), // [UPDATED] Using the new Class
       const CartScreen(),
       const ProfileScreen(),
@@ -59,7 +60,7 @@ class _FashionHomePageState extends State<FashionHomePage> {
         unselectedLabelStyle: const TextStyle(fontSize: 10),
         items: [
           const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Shop'),
-          const BottomNavigationBarItem(icon: Icon(Icons.category_outlined), label: 'Category'),
+          const BottomNavigationBarItem(icon: Icon(Icons.style_outlined), label: 'Style'), // [UPDATED]
           const BottomNavigationBarItem(icon: Icon(Icons.checkroom), label: 'Try-On'), // Updated Icon and Label
           BottomNavigationBarItem(
             icon: Consumer<CartProvider>(

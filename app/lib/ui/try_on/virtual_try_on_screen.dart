@@ -15,7 +15,7 @@ class VirtualTryOnScreen extends StatefulWidget {
   State<VirtualTryOnScreen> createState() => _VirtualTryOnScreenState();
 }
 
-class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
+class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> with SingleTickerProviderStateMixin {
   // 1. State Management
   Product? _selectedTop;
   Product? _selectedBottom;
@@ -28,10 +28,21 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
   final ValueNotifier<Matrix4> _outerwearMatrix = ValueNotifier(Matrix4.identity());
   final ValueNotifier<Matrix4> _shoesMatrix = ValueNotifier(Matrix4.identity());
 
+  late TabController _tabController;
+  int _currentTabIndex = 0; // 0: Top, 1: Bottom, 2: Outerwear, 3: Shoes
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.index != _currentTabIndex) {
+        setState(() {
+          _currentTabIndex = _tabController.index;
+        });
+      }
+    });
+
     if (widget.initialProducts != null) {
       for (var p in widget.initialProducts!) {
         // Auto-select based on subCategory
@@ -40,6 +51,12 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
         }
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _onSelectProduct(Product product, String type) {
@@ -148,28 +165,33 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                   ),
 
                   // Order: Shoes -> Bottom -> Top -> Outerwear
+                  // Pass isEditable based on active tab: 0=Top, 1=Bot, 2=Outer, 3=Shoes
                   if (_selectedShoes?.tryOnImageUrl != null)
                     DraggableItem(
                       imageUrl: _selectedShoes!.tryOnImageUrl!,
                       matrixNotifier: _shoesMatrix,
+                      isEditable: _currentTabIndex == 3,
                     ),
                   
                   if (_selectedBottom?.tryOnImageUrl != null)
                     DraggableItem(
                       imageUrl: _selectedBottom!.tryOnImageUrl!,
                       matrixNotifier: _bottomMatrix,
+                      isEditable: _currentTabIndex == 1,
                     ),
 
                   if (_selectedTop?.tryOnImageUrl != null)
                     DraggableItem(
                       imageUrl: _selectedTop!.tryOnImageUrl!,
                       matrixNotifier: _topMatrix,
+                      isEditable: _currentTabIndex == 0,
                     ),
 
                   if (_selectedOuterwear?.tryOnImageUrl != null)
                     DraggableItem(
                       imageUrl: _selectedOuterwear!.tryOnImageUrl!,
                       matrixNotifier: _outerwearMatrix,
+                      isEditable: _currentTabIndex == 2,
                     ),
                 ],
               ),
@@ -179,35 +201,34 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
           // --- 2.2 The Selector (Flex 4) ---
           Expanded(
             flex: 4,
-            child: DefaultTabController(
-              length: 4,
-              child: Column(
-                children: [
-                  Container(
-                    color: Colors.white,
-                    child: const TabBar(
-                      labelColor: Colors.black,
-                      unselectedLabelColor: Colors.grey,
-                      tabs: [
-                        Tab(text: 'Áo (Top)'),
-                        Tab(text: 'Quần (Bot)'),
-                        Tab(text: 'Khoác'),
-                        Tab(text: 'Giày'),
-                      ],
-                    ),
+            child: Column(
+              children: [
+                Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: Colors.black,
+                    unselectedLabelColor: Colors.grey,
+                    tabs: const [
+                      Tab(text: 'Áo (Top)'),
+                      Tab(text: 'Quần (Bot)'),
+                      Tab(text: 'Khoác'),
+                      Tab(text: 'Giày'),
+                    ],
                   ),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        _ProductGrid(category: 'Top', onSelect: (p) => _onSelectProduct(p, 'top')),
-                        _ProductGrid(category: 'Bottom', onSelect: (p) => _onSelectProduct(p, 'bottom')),
-                        _ProductGrid(category: 'Outerwear', onSelect: (p) => _onSelectProduct(p, 'outerwear')),
-                        _ProductGrid(category: 'Shoes', onSelect: (p) => _onSelectProduct(p, 'shoes')),
-                      ],
-                    ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _ProductGrid(category: 'Top', onSelect: (p) => _onSelectProduct(p, 'top')),
+                      _ProductGrid(category: 'Bottom', onSelect: (p) => _onSelectProduct(p, 'bottom')),
+                      _ProductGrid(category: 'Outerwear', onSelect: (p) => _onSelectProduct(p, 'outerwear')),
+                      _ProductGrid(category: 'Shoes', onSelect: (p) => _onSelectProduct(p, 'shoes')),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -220,11 +241,13 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
 class DraggableItem extends StatelessWidget {
   final String imageUrl;
   final ValueNotifier<Matrix4> matrixNotifier;
+  final bool isEditable;
 
   const DraggableItem({
     super.key,
     required this.imageUrl,
     required this.matrixNotifier,
+    this.isEditable = true,
   });
 
   @override
@@ -233,19 +256,23 @@ class DraggableItem extends StatelessWidget {
     return ValueListenableBuilder<Matrix4>(
       valueListenable: matrixNotifier,
       builder: (context, matrix, child) {
-        return MatrixGestureDetector(
-          shouldRotate: true,
-          shouldScale: true,
-          shouldTranslate: true,
-          onMatrixUpdate: (m, tm, sm, rm) {
-            matrixNotifier.value = m;
-          },
-          child: Transform(
-            transform: matrix,
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.contain,
-              // width: 200, // Optional initial size
+        // If not editable, we use IgnorePointer to let touches pass through to layers below
+        return IgnorePointer(
+          ignoring: !isEditable, 
+          child: MatrixGestureDetector(
+            shouldRotate: true,
+            shouldScale: true,
+            shouldTranslate: true,
+            onMatrixUpdate: (m, tm, sm, rm) {
+              matrixNotifier.value = m;
+            },
+            child: Transform(
+              transform: matrix,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                // width: 200, // Optional initial size
+              ),
             ),
           ),
         );

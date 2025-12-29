@@ -9,6 +9,7 @@ import '../../models/product_model.dart';
 import '../product/product_detail_screen.dart';
 import '../order/order_history_screen.dart';
 import '../address/address_list_screen.dart';
+import 'my_posts_screen.dart'; // [NEW]
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -332,11 +333,15 @@ class _ServicesSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          _ServiceItem(icon: Icons.headset_mic_outlined, label: 'CSKH'),
-          _ServiceItem(icon: Icons.calendar_today_outlined, label: 'Điểm danh'),
-          _ServiceItem(icon: Icons.assignment_outlined, label: 'Khảo sát'),
-          _ServiceItem(icon: Icons.shield_outlined, label: 'Chính sách'),
+        children: [
+          const _ServiceItem(icon: Icons.headset_mic_outlined, label: 'CSKH'),
+          const _ServiceItem(icon: Icons.calendar_today_outlined, label: 'Điểm danh'),
+          _ServiceItem(
+            icon: Icons.post_add_outlined, 
+            label: 'Bài đăng',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPostsScreen())),
+          ),
+          const _ServiceItem(icon: Icons.shield_outlined, label: 'Chính sách'),
         ],
       ),
     );
@@ -346,16 +351,26 @@ class _ServicesSection extends StatelessWidget {
 class _ServiceItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _ServiceItem({required this.icon, required this.label});
+  final VoidCallback? onTap;
+
+  const _ServiceItem({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-     return Column(
-      children: [
-        Icon(icon, size: 26, color: Colors.black87),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 11)),
-      ],
+     return InkWell(
+       onTap: onTap,
+       borderRadius: BorderRadius.circular(8),
+       child: Container(
+         width: 70, 
+         padding: const EdgeInsets.symmetric(vertical: 4),
+         child: Column(
+          children: [
+            Icon(icon, size: 26, color: Colors.black87),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 11)),
+          ],
+         ),
+       ),
     );
   }
 }
