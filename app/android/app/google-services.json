@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "794522024584",
+    "project_id": "fashion-app-70ccf",
+    "storage_bucket": "fashion-app-70ccf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:794522024584:android:cebc63175edf50506d7d3d",
+        "android_client_info": {
+          "package_name": "com.example.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "794522024584-5q3jkalq9cu5op0gquoggl61k7rtl6c0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app",
+            "certificate_hash": "540d7c0f94cf7e4c5cbe1a6c2302edbd2d8284e3"
+          }
+        },
+        {
+          "client_id": "794522024584-pvc9p1hp3a0fosc3hvu1ad8v29lbcpt3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEu1rnnMA9JYfw-Zc_4mG8sdocyYlE7mA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "794522024584-pvc9p1hp3a0fosc3hvu1ad8v29lbcpt3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "794522024584-taft1hb4iq5sfr1r4mhudi0i1mofsd5u.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:794522024584:android:1f351c64addd31996d7d3d",
+        "android_client_info": {
+          "package_name": "com.quy.fashionapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "794522024584-9u3dd88ipa7k5tfk0blcjbe25fajtro1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.quy.fashionapp",
+            "certificate_hash": "540d7c0f94cf7e4c5cbe1a6c2302edbd2d8284e3"
+          }
+        },
+        {
+          "client_id": "794522024584-pvc9p1hp3a0fosc3hvu1ad8v29lbcpt3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEu1rnnMA9JYfw-Zc_4mG8sdocyYlE7mA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "794522024584-pvc9p1hp3a0fosc3hvu1ad8v29lbcpt3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "794522024584-taft1hb4iq5sfr1r4mhudi0i1mofsd5u.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

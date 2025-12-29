@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HÀM KIỂM TRA QUYỀN (HELPER FUNCTIONS) ---
+    
+    // Kiểm tra đã đăng nhập chưa
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Kiểm tra có phải là Admin không?
+    // Cách 1 (Đơn giản nhất cho lúc Build): Cứ đăng nhập vào Admin Portal là được ghi
+    function isAdmin() {
+      return isAuthenticated(); 
+    }
+    
+    // Cách 2 (Nâng cao - Bảo mật): Phải có field 'role' là 'admin' trong User
+    // function isAdmin() {
+    //   return isAuthenticated() && 
+    //     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // }
+
+    // --- CẤU HÌNH COLLECTION ---
+
+    // 1. USER PROFILE: Người nào được xem/sửa profile người nấy
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 2. PRODUCTS (SẢN PHẨM): 
+    // - Khách (bao gồm khách vãng lai): Được xem tất cả (read: true)
+    // - Admin: Được thêm/sửa/xóa
+    match /products/{productId} {
+      allow read: if true; // Công khai để App hiển thị sản phẩm
+      allow write: if isAdmin(); // Chỉ Admin mới được đăng sp
+    }
+
+    // 3. ORDERS (ĐƠN HÀNG):
+    match /orders/{orderId} {
+      // Ai cũng được tạo đơn (miễn là đã login - hoặc mở true nếu cho mua ko cần login)
+      allow create: if isAuthenticated();
+      
+      // Chỉ xem được đơn của chính mình OR là Admin thì xem được hết
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      
+      // Chỉ Admin được sửa trạng thái đơn (Giao hàng, Hủy...)
+      allow update: if isAdmin();
+    }
+    
+    // 4. CÁC COLLECTION KHÁC (Banner, Category...)
+    match /{path=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
