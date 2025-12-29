@@ -6,13 +6,31 @@ import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../services/product_service.dart';
 import '../../models/product_model.dart';
+import '../../models/order_model.dart'; // [NEW]
+import '../../providers/order_provider.dart'; // [NEW]
 import '../product/product_detail_screen.dart';
 import '../order/order_history_screen.dart';
 import '../address/address_list_screen.dart';
-import 'my_posts_screen.dart'; // [NEW]
+import 'my_posts_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = AuthService.instance.currentUser;
+      if (user != null) {
+        context.read<OrderProvider>().fetchOrders(user.uid);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +39,10 @@ class ProfileScreen extends StatelessWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            // Trigger refresh logic if needed
-            await Future.delayed(const Duration(milliseconds: 500));
+            final user = AuthService.instance.currentUser;
+            if (user != null) {
+              await context.read<OrderProvider>().fetchOrders(user.uid);
+            }
           },
           child: CustomScrollView(
             slivers: [
@@ -227,59 +247,75 @@ class _MyOrdersSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Consumer<OrderProvider>(
+      builder: (context, orderProvider, child) {
+        final orders = orderProvider.orders;
+        final pendingCount = orders.where((o) => o.status == OrderStatus.pending).length;
+        final shippingCount = orders.where((o) => o.status == OrderStatus.shipping).length;
+        // final deliveredCount = orders.where((o) => o.status == OrderStatus.delivered).length;
+        // final cancelledCount = orders.where((o) => o.status == OrderStatus.cancelled).length;
+        
+        // Mapping delivered to 'Review' (Đánh giá) section roughly
+        final reviewCount = orders.where((o) => o.status == OrderStatus.delivered).length; 
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
             children: [
-              const Text('Đơn hàng của tôi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen())),
-                child: Row(
-                  children: const [
-                    Text('Xem tất cả', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                  ],
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Đơn hàng của tôi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  InkWell(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen())),
+                    child: Row(
+                      children: const [
+                        Text('Xem tất cả', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _TaskIcon(
+                    icon: Icons.credit_card, 
+                    label: 'Chờ thanh toán', 
+                    badgeCount: pendingCount,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 1))),
+                  ),
+                  _TaskIcon(
+                    icon: Icons.inventory_2_outlined, 
+                    label: 'Đang xử lý', 
+                    // badgeCount: pendingCount, // Duplicate badge? Maybe leave empty 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 1))),
+                  ),
+                  _TaskIcon(
+                    icon: Icons.local_shipping_outlined, 
+                    label: 'Đang giao', 
+                    badgeCount: shippingCount, 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 2))),
+                  ),
+                  _TaskIcon(
+                    icon: Icons.rate_review_outlined, 
+                    label: 'Đánh giá', 
+                    badgeCount: reviewCount,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 3))),
+                  ),
+                  _TaskIcon(
+                    icon: Icons.replay_outlined, 
+                    label: 'Đổi trả', 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 4))),
+                  ),
+                ],
               )
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _TaskIcon(
-                icon: Icons.credit_card, 
-                label: 'Chờ thanh toán', 
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 1))),
-              ),
-              _TaskIcon(
-                icon: Icons.inventory_2_outlined, 
-                label: 'Đang xử lý', 
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 1))),
-              ),
-              _TaskIcon(
-                icon: Icons.local_shipping_outlined, 
-                label: 'Đang giao', 
-                badgeCount: 1, 
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 2))),
-              ),
-              _TaskIcon(
-                icon: Icons.rate_review_outlined, 
-                label: 'Đánh giá', 
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 3))),
-              ),
-              _TaskIcon(
-                icon: Icons.replay_outlined, 
-                label: 'Đổi trả', 
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 4))),
-              ),
-            ],
-          )
-        ],
-      ),
+        );
+      },
     );
   }
 }

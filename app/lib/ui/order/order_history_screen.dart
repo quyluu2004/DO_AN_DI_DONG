@@ -6,6 +6,7 @@ import '../../providers/order_provider.dart';
 import '../../models/order_model.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
+import 'order_detail_screen.dart'; // [NEW]
 
 class OrderHistoryScreen extends StatefulWidget {
   final int initialIndex;
@@ -82,6 +83,19 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> with SingleTick
             return const Center(child: CircularProgressIndicator());
           }
 
+          if (orderProvider.error != null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SelectableText(
+                  'Lỗi: ${orderProvider.error}',
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
           if (orderProvider.orders.isEmpty) {
             return const Center(child: Text('Chưa có đơn hàng nào'));
           }
@@ -118,56 +132,61 @@ class _OrderList extends StatelessWidget {
       itemCount: orders.length,
       itemBuilder: (context, index) {
         final order = orders[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Đơn hàng #${order.id.substring(order.id.length - 6)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    _buildStatusBadge(order.status),
-                  ],
-                ),
-                const Divider(),
-                ...order.items.map((item) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailScreen(order: order)));
+          },
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        color: Colors.grey[200],
-                        child: item.imageUrl.isNotEmpty ? Image.network(item.imageUrl, fit: BoxFit.cover) : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.productName, maxLines: 1, overflow: TextOverflow.ellipsis),
-                            Text('x${item.quantity}', style: const TextStyle(color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                      Text('đ ${item.totalPrice}'),
+                      Text('Đơn hàng #${order.id.substring(order.id.length - 6)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      _buildStatusBadge(order.status),
                     ],
                   ),
-                )),
-                const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('${order.items.length} sản phẩm'),
-                    Text('Thành tiền: đ ${order.totalAmount}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text('Ngày đặt: ${DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt)}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
+                  const Divider(),
+                  ...order.items.map((item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          color: Colors.grey[200],
+                          child: item.imageUrl.isNotEmpty ? Image.network(item.imageUrl, fit: BoxFit.cover) : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.productName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text('x${item.quantity}', style: const TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                        ),
+                        Text('đ ${item.totalPrice}'),
+                      ],
+                    ),
+                  )),
+                  const Divider(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${order.items.length} sản phẩm'),
+                      Text('Thành tiền: đ ${order.totalAmount}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Ngày đặt: ${DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt)}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                ],
+              ),
             ),
           ),
         );
