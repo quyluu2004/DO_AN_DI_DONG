@@ -7,6 +7,7 @@ import '../../models/order_model.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import 'order_detail_screen.dart'; // [NEW]
+import '../review/write_review_screen.dart'; // [NEW]
 
 class OrderHistoryScreen extends StatefulWidget {
   final int initialIndex;
@@ -153,25 +154,57 @@ class _OrderList extends StatelessWidget {
                   const Divider(),
                   ...order.items.map((item) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          color: Colors.grey[200],
-                          child: item.imageUrl.isNotEmpty ? Image.network(item.imageUrl, fit: BoxFit.cover) : null,
+                        Row(
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              color: Colors.grey[200],
+                              child: item.imageUrl.isNotEmpty ? Image.network(item.imageUrl, fit: BoxFit.cover) : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.productName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  Text('x${item.quantity}', style: const TextStyle(color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                            Text('đ ${item.totalPrice}'),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.productName, maxLines: 1, overflow: TextOverflow.ellipsis),
-                              Text('x${item.quantity}', style: const TextStyle(color: Colors.grey)),
-                            ],
+                        if (order.status == OrderStatus.delivered)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                   Navigator.push(context, MaterialPageRoute(builder: (_) => WriteReviewScreen(
+                                     productId: item.productId,
+                                     orderId: order.id,
+                                     productName: item.productName,
+                                     productImage: item.imageUrl,
+                                     variantColor: item.color ?? '',
+                                     variantSize: item.size ?? '',
+                                   )));
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.charcoal,
+                                  side: const BorderSide(color: AppColors.charcoal),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                                  minimumSize: const Size(0, 32),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Đánh giá'),
+                              ),
+                            ),
                           ),
-                        ),
-                        Text('đ ${item.totalPrice}'),
                       ],
                     ),
                   )),

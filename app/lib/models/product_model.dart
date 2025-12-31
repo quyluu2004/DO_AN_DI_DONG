@@ -175,6 +175,7 @@ class Product {
   final int sales; // Lượt bán
   final double? averageRating; // Đánh giá trung bình (0.0 - 5.0)
   final int reviewCount; // Số lượng đánh giá
+  final Map<String, dynamic>? reviewStats; // [NEW] Aggregate stats: fit distribution etc.
   
   // Metadata
   final DateTime createdAt;
@@ -200,6 +201,7 @@ class Product {
     this.sales = 0,
     this.averageRating,
     this.reviewCount = 0,
+    this.reviewStats,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -244,6 +246,7 @@ class Product {
       'sales': sales,
       'averageRating': averageRating,
       'reviewCount': reviewCount,
+      'reviewStats': reviewStats,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -289,6 +292,7 @@ class Product {
       sales: (data['sales'] as num?)?.toInt() ?? 0,
       averageRating: (data['averageRating'] as num?)?.toDouble(),
       reviewCount: (data['reviewCount'] as num?)?.toInt() ?? 0,
+      reviewStats: data['reviewStats'] as Map<String, dynamic>?,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -315,6 +319,7 @@ class Product {
     int? sales,
     double? averageRating,
     int? reviewCount,
+    Map<String, dynamic>? reviewStats,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -338,6 +343,7 @@ class Product {
       sales: sales ?? this.sales,
       averageRating: averageRating ?? this.averageRating,
       reviewCount: reviewCount ?? this.reviewCount,
+      reviewStats: reviewStats ?? this.reviewStats,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

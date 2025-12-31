@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/product_model.dart';
+import '../models/review_model.dart'; // [NEW] Needed for stats calculation
 
 /// Service quản lý sản phẩm (D2C)
 /// 
@@ -313,5 +314,65 @@ class ProductService {
     if (snapshot.docs.isEmpty) return null;
     return Product.fromDoc(snapshot.docs.first);
   }
-}
 
+  /// Tính toán lại chỉ số đánh giá (Review Stats) cho sản phẩm
+  /// [productId] - ID của sản phẩm
+  Future<void> updateReviewStats(String productId) async {
+    // 1. Lấy tất cả review của sản phẩm
+    final reviewsSnapshot = await _db
+        .collection('reviews')
+        .where('productId', isEqualTo: productId)
+        .get();
+    
+    final reviews = reviewsSnapshot.docs.map((doc) => Review.fromDoc(doc)).toList();
+
+    if (reviews.isEmpty) {
+      await updateProduct(productId, {
+        'averageRating': 0.0,
+        'reviewCount': 0,
+        'reviewStats': null,
+      });
+      return;
+    }
+
+    // 2. Tính toán rating trung bình
+    final totalRating = reviews.fold(0.0, (sum, r) => sum + r.rating);
+    final averageRating = totalRating / reviews.length;
+
+    // 3. Tính toán Fit Distribution
+    int smallCount = 0;
+    int trueToSizeCount = 0;
+    int largeCount = 0;
+
+    for (var r in reviews) {
+      switch (r.fitRating) {
+        case FitRating.small:
+          smallCount++;
+          break;
+        case FitRating.trueToSize:
+          trueToSizeCount++;
+          break;
+        case FitRating.large:
+          largeCount++;
+          break;
+      }
+    }
+
+    final totalFit = reviews.length;
+    final fitStats = {
+      'small': smallCount > 0 ? (smallCount / totalFit) : 0.0,
+      'trueToSize': trueToSizeCount > 0 ? (trueToSizeCount / totalFit) : 0.0,
+      'large': largeCount > 0 ? (largeCount / totalFit) : 0.0,
+    };
+
+    // 4. Update Product Document
+    await updateProduct(productId, {
+      'averageRating': averageRating,
+      'reviewCount': reviews.length,
+      'reviewStats': {
+        'fit': fitStats,
+        // Có thể thêm tag counting ở đây sau này nếu cần
+      },
+    });
+  }
+}
