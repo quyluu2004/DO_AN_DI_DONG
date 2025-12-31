@@ -315,6 +315,22 @@ class ProductService {
     return Product.fromDoc(snapshot.docs.first);
   }
 
+  /// Lấy danh sách sản phẩm yêu thích (giới hạn 10 ID đầu tiên do Firestore limit)
+  /// 
+  /// [productIds] - Danh sách ID sản phẩm cần lấy
+  Stream<List<Product>> getFavoriteProducts(List<String> productIds) {
+    if (productIds.isEmpty) return Stream.value([]);
+
+    // Firestore 'whereIn' supports max 10 values
+    // Trong thực tế nếu > 10 cần chia nhỏ query hoặc giải pháp khác
+    final idsToFetch = productIds.take(10).toList();
+
+    return _productsCol
+        .where(FieldPath.documentId, whereIn: idsToFetch)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(Product.fromDoc).toList());
+  }
+
   /// Tính toán lại chỉ số đánh giá (Review Stats) cho sản phẩm
   /// [productId] - ID của sản phẩm
   Future<void> updateReviewStats(String productId) async {

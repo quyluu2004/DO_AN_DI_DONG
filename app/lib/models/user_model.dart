@@ -11,6 +11,7 @@ class UserModel {
   final String role;
   final bool isVerified;
   final String? fcmToken;
+  final List<String> favoriteProductIds;
 
   UserModel({
     required this.uid,
@@ -23,6 +24,7 @@ class UserModel {
     this.role = 'buyer',
     this.isVerified = false,
     this.fcmToken,
+    this.favoriteProductIds = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -36,6 +38,7 @@ class UserModel {
       'role': role,
       'isVerified': isVerified,
       'fcmToken': fcmToken,
+      'favoriteProductIds': favoriteProductIds,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -53,6 +56,7 @@ class UserModel {
       role: data['role'] as String? ?? 'buyer',
       isVerified: data['isVerified'] as bool? ?? false,
       fcmToken: data['fcmToken'] as String?,
+      favoriteProductIds: List<String>.from(data['favoriteProductIds'] as List<dynamic>? ?? []),
     );
   }
 }

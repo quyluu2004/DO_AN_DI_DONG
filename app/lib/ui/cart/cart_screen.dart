@@ -109,6 +109,13 @@ class CartScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                   // [NEW] Coupon Section
+                   Padding(
+                     padding: const EdgeInsets.symmetric(horizontal: 16),
+                     child: _CouponSection(),
+                   ),
+                   const Divider(height: 1),
+
                    // Standard Checkout Bar
                    Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -403,6 +410,88 @@ class _QtyButton extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Icon(icon, size: 14),
+      ),
+    );
+  }
+}
+
+class _CouponSection extends StatefulWidget {
+  @override
+  State<_CouponSection> createState() => _CouponSectionState();
+}
+
+class _CouponSectionState extends State<_CouponSection> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context);
+    final isCouponApplied = cartProvider.appliedCoupon != null;
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.confirmation_number_outlined, size: 20, color: Colors.orange),
+              const SizedBox(width: 8),
+              if (!isCouponApplied)
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: 'Nhập mã giảm giá',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      suffixIcon: _isLoading 
+                        ? const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
+                        : null,
+                    ),
+                  ),
+                )
+              else 
+                Expanded(
+                  child: Text(
+                    'Đã áp dụng: ${cartProvider.appliedCoupon!.code} (-${currencyFormat.format(cartProvider.discountAmount)})',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                ),
+              
+              const SizedBox(width: 8),
+              
+              TextButton(
+                onPressed: _isLoading ? null : () async {
+                  if (isCouponApplied) {
+                    cartProvider.removeCoupon();
+                    _controller.clear();
+                  } else {
+                    if (_controller.text.isEmpty) return;
+                    setState(() => _isLoading = true);
+                    try {
+                      await cartProvider.applyCoupon(_controller.text.trim());
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm mã thành công!')));
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                    } finally {
+                      setState(() => _isLoading = false);
+                    }
+                  }
+                },
+                child: Text(isCouponApplied ? 'Xóa' : 'Áp dụng', style: const TextStyle(fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+          if (cartProvider.couponError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 28),
+              child: Text(cartProvider.couponError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            )
+        ],
       ),
     );
   }

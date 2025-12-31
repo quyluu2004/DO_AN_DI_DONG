@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/registration_provider.dart';
 import 'register_account_screen.dart';
+import 'forgot_password_screen.dart'; // [NEW]
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -167,13 +168,18 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Text(
-                          'Quên mật khẩu?',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
+                            },
+                            child: Text(
+                              'Quên mật khẩu?',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
-                        ),
                       ),
                       const SizedBox(height: 16),
                       if (_error != null) ...[
