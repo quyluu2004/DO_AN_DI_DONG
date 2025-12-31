@@ -1,9 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/favorite_provider.dart';
 import '../../theme/app_theme.dart';
+import '../cart/cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -184,9 +185,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.favorite_border),
+                      Consumer<FavoriteProvider>(
+                        builder: (context, favoriteProvider, child) {
+                          final isFavorite = favoriteProvider.isFavorite(widget.product.id);
+                          return IconButton(
+                            onPressed: () => favoriteProvider.toggleFavorite(widget.product.id),
+                            icon: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: isFavorite ? Colors.red : Colors.black,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -252,6 +261,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     }).toList(),
                   ),
                   
+                  const SizedBox(height: 24),
+                  
+                  // Reviews Section [NEW]
+
+
                   const SizedBox(height: 100), // Space for bottom bar
                 ],
               ),
@@ -321,3 +335,5 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 }
+
+

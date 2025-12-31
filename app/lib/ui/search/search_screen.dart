@@ -1,7 +1,9 @@
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // [NEW]
 import '../../theme/app_theme.dart';
 import '../../models/product_model.dart';
+import '../../services/product_service.dart'; // [NEW]
 import '../product/product_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -24,25 +26,72 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Product> _results = [];
   bool _isSearching = false;
 
+
+
+  // Search History [NEW]
+  List<String> _searchHistory = []; // Start empty, load from prefs
+
   @override
   void initState() {
     super.initState();
     _focusNode.requestFocus();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _searchHistory = prefs.getStringList('search_history') ?? [];
+    });
+  }
+
+  Future<void> _saveHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('search_history', _searchHistory);
   }
 
   void _performSearch(String query) async {
     if (query.isEmpty) return;
     
+    // Save to history
+    if (!_searchHistory.contains(query)) {
+      setState(() {
+        _searchHistory.insert(0, query);
+        if (_searchHistory.length > 5) _searchHistory.removeLast();
+      });
+      _saveHistory(); // Save persistence
+    } else {
+        // Move to top if already exists
+        setState(() {
+            _searchHistory.remove(query);
+            _searchHistory.insert(0, query);
+        });
+        _saveHistory();
+    }
+
     setState(() => _isSearching = true);
-    
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 800));
-    
-    // Mock results removed
-    setState(() {
-      _results = [];
-      _isSearching = false;
-    });
+
+    try {
+      // Use the existing searchProducts method from ProductService
+      // Since it returns a Stream, we take the first emission for this search action
+      final products = await ProductService.instance.searchProducts(searchQuery: query).first;
+      
+      setState(() {
+        _results = products;
+        _isSearching = false;
+      });
+    } catch (e) {
+      debugPrint('Search error: $e');
+      setState(() {
+        _results = [];
+        _isSearching = false;
+      });
+    }
+  }
+
+  void _onTagSelected(String tag) {
+    _searchController.text = tag;
+    _performSearch(tag);
   }
 
   void _showFilterSheet() {
@@ -143,6 +192,14 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           onSubmitted: _performSearch,
           textInputAction: TextInputAction.search,
+          onChanged: (value) {
+            if (value.isEmpty) {
+              setState(() {
+                _results = [];
+                _isSearching = false;
+              });
+            }
+          },
         ),
         backgroundColor: Colors.white,
         elevation: 1,
@@ -162,20 +219,43 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
+
       body: _isSearching 
           ? const Center(child: CircularProgressIndicator())
-          : _results.isEmpty 
+          : _results.isEmpty && _searchController.text.isNotEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.search_off, size: 64, color: Colors.grey[300]),
                       const SizedBox(height: 16),
-                      const Text('Nhập từ khóa để tìm kiếm', style: TextStyle(color: Colors.grey)),
+                      const Text('Không tìm thấy kết quả', style: TextStyle(color: Colors.grey)),
                     ],
                   ),
                 )
-              : ListView.separated(
+              : _results.isEmpty && _searchController.text.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Lịch sử tìm kiếm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _searchHistory.map((tag) => ActionChip(
+                              label: Text(tag),
+                              onPressed: () => _onTagSelected(tag),
+                              avatar: const Icon(Icons.history, size: 16, color: Colors.grey),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.grey[300]!)),
+                            )).toList(),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: _results.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),

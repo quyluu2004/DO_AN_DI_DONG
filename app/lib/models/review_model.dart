@@ -1,23 +1,23 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Review {
+class ReviewModel {
   final String id;
   final String productId;
   final String userId;
   final String userName;
-  final String? userAvatar;
+  final String? userAvatarUrl; // Renamed to match usage in service
   final double rating;
   final String comment;
   final List<String> images;
   final DateTime createdAt;
 
-  Review({
+  ReviewModel({
     required this.id,
     required this.productId,
     required this.userId,
     required this.userName,
-    this.userAvatar,
+    this.userAvatarUrl,
     required this.rating,
     required this.comment,
     this.images = const [],
@@ -30,7 +30,7 @@ class Review {
       'productId': productId,
       'userId': userId,
       'userName': userName,
-      'userAvatar': userAvatar,
+      'userAvatarUrl': userAvatarUrl,
       'rating': rating,
       'comment': comment,
       'images': images,
@@ -38,14 +38,14 @@ class Review {
     };
   }
 
-  factory Review.fromDoc(DocumentSnapshot doc) {
+  factory ReviewModel.fromDoc(DocumentSnapshot doc) {
     final map = doc.data() as Map<String, dynamic>;
-    return Review(
+    return ReviewModel(
       id: doc.id,
       productId: map['productId'] ?? '',
       userId: map['userId'] ?? '',
       userName: map['userName'] ?? 'Anonymous',
-      userAvatar: map['userAvatar'],
+      userAvatarUrl: map['userAvatarUrl'], // Updated key
       rating: (map['rating'] ?? 0).toDouble(),
       comment: map['comment'] ?? '',
       images: List<String>.from(map['images'] ?? []),

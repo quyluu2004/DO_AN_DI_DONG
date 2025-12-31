@@ -12,12 +12,14 @@ import '../../models/product_model.dart';
 import '../../services/product_service.dart';
 import '../product/product_detail_screen.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/favorite_provider.dart';
 import '../search/search_screen.dart';
 import '../search/search_screen.dart';
 import '../search/search_screen.dart';
 import '../cart/cart_screen.dart';
 import '../try_on/virtual_try_on_screen.dart'; // [UPDATED]
 import '../social_feed/social_feed_screen.dart'; // [NEW]
+import '../product/favorite_list_screen.dart';
 
 class FashionHomePage extends StatefulWidget {
   const FashionHomePage({super.key});
@@ -336,7 +338,10 @@ class _HomeHeader extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.favorite_border, color: Colors.black87)),
+          IconButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoriteListScreen())),
+            icon: const Icon(Icons.favorite_border, color: Colors.black87),
+          ),
         ],
       ),
     );
@@ -724,10 +729,27 @@ class _ProductCard extends StatelessWidget {
                   Positioned(
                     bottom: 8,
                     left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      color: Colors.white.withOpacity(0.8),
-                      child: const Icon(Icons.shopping_cart_outlined, size: 16),
+                    child: Consumer<FavoriteProvider>(
+                      builder: (context, favoriteProvider, child) {
+                        final isFavorite = favoriteProvider.isFavorite(product.id);
+                        return GestureDetector(
+                          onTap: () {
+                             favoriteProvider.toggleFavorite(product.id);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              size: 18,
+                              color: isFavorite ? Colors.red : Colors.grey,
+                            ),
+                          ),
+                        );
+                      }
                     ),
                   )
                 ],
@@ -747,6 +769,7 @@ class _ProductCard extends StatelessWidget {
                       const Text('-35%', style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ],
                   ),
+                  const SizedBox(height: 4),
                 ],
               ),
             ),

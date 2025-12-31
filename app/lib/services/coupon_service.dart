@@ -38,4 +38,19 @@ class CouponService {
   Future<void> updateCouponStatus(String id, bool isActive) async {
     await _db.collection('coupons').doc(id).update({'isActive': isActive});
   }
+  /// Kiểm tra mã giảm giá với giá trị đơn hàng
+  Future<CouponModel?> validateCoupon(String code, double orderValue) async {
+    final coupon = await getCouponByCode(code);
+    if (coupon == null) {
+      throw Exception('Mã giảm giá không tồn tại');
+    }
+
+    if (orderValue < coupon.minOrderValue) {
+      throw Exception('Đơn hàng chưa đủ điều kiện tối thiểu ${coupon.minOrderValue}');
+    }
+
+    // Logic kiểm tra hạn sử dụng ở đây nếu cần (dựa vào fields trong CouponModel)
+
+    return coupon;
+  }
 }

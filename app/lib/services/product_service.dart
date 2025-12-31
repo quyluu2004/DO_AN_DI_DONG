@@ -313,5 +313,32 @@ class ProductService {
     if (snapshot.docs.isEmpty) return null;
     return Product.fromDoc(snapshot.docs.first);
   }
+
+
+  /// Lấy danh sách sản phẩm theo danh sách ID (dùng cho Favorites)
+  Stream<List<Product>> getFavoriteProducts(List<String> productIds) {
+    if (productIds.isEmpty) {
+      return Stream.value([]);
+    }
+
+    // Firestore `whereIn` giới hạn 10 items (not 30, it is 10 for 'in' and 'array-contains-any', but 10 for 'whereIn'? Docs say 10 for OR queries, 30 for IN queries on some platforms, let's play safe or handle batching if needed. For MVP, assuming small list).
+    // Actually, documentId with whereIn supports up to 10-30 depending on version.
+    // If list is > 10, we might need to split.
+    // For simplicity in this project, if the list is huge, we will just fetch chunks.
+    // But to keep it extremely simple for now:
+    
+    // We can't easily stream 'whereIn' > 10 items. 
+    // Alternative: Stream ALL active products and filter in memory (not efficient but safe for small apps).
+    // OR: Stream chunks.
+
+    // Let's try client-side filter for robustness with small dataset unless requirements say otherwise.
+    return _productsCol
+        .where('status', isEqualTo: ProductStatus.active.value)
+        .snapshots()
+        .map((snapshot) {
+          final allProducts = snapshot.docs.map(Product.fromDoc).toList();
+          return allProducts.where((p) => productIds.contains(p.id)).toList();
+        });
+  }
 }
 

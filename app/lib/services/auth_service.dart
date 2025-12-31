@@ -100,6 +100,17 @@ class AuthService {
       throw AuthServiceException('Đăng nhập Google thất bại: $e');
     }
   }
+
+  /// Gửi email đặt lại mật khẩu của Firebase
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw AuthServiceException.fromFirebase(e);
+    } catch (e) {
+      throw AuthServiceException('Lỗi không xác định: $e');
+    }
+  }
 }
 
 /// Exception đơn giản hoá thông báo lỗi Auth cho UI.
