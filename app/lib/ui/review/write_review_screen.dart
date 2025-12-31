@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/review_model.dart';
 import '../../services/review_service.dart';
+import 'package:image_picker/image_picker.dart'; // [NEW]
+import '../../services/cloudinary_service.dart'; // [NEW]
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -36,8 +38,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   final TextEditingController _weightController = TextEditingController();
   bool _isSubmitting = false;
 
-  // Mock Image Picker State
-  final List<String> _localImages = []; // In a real app, this would be File or XFile
+  bool _isUploadingImage = false; // [NEW]
+
+  // Image Helper
+  final ImagePicker _picker = ImagePicker();
+  final List<String> _imageUrls = []; // Real uploaded URLs
 
   @override
   void dispose() {
@@ -76,7 +81,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         fitRating: _fitRating,
         userHeight: double.tryParse(_heightController.text),
         userWeight: double.tryParse(_weightController.text),
-        images: _localImages, // In real app, upload these first and get URLs
+
+        images: _imageUrls, // [UPDATED] Use real URLs
         createdAt: DateTime.now(),
       );
 
@@ -102,12 +108,40 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     }
   }
 
-  void _pickImage() {
-    // Mock image picking
-    // In real app: create a helper or use image_picker
-    setState(() {
-      _localImages.add('https://picsum.photos/200?random=${DateTime.now().millisecondsSinceEpoch}');
-    });
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, // Optimize size
+        maxWidth: 1024,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploadingImage = true);
+
+      // Upload to Cloudinary
+      final bytes = await image.readAsBytes();
+      final url = await CloudinaryService.instance.uploadImage(
+        bytes: bytes,
+        folder: 'reviews', // Folder in Cloudinary
+      );
+
+      if (mounted) {
+        setState(() {
+          _imageUrls.add(url);
+          _isUploadingImage = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Upload ảnh thất bại: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
   }
 
   @override
@@ -200,31 +234,45 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                 ),
               ),
             ),
-            if (_localImages.isNotEmpty)
+            if (_imageUrls.isNotEmpty || _isUploadingImage)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _localImages.map((url) => Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(url, width: 80, height: 80, fit: BoxFit.cover),
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _localImages.remove(url)),
-                          child: Container(
-                            color: Colors.black54,
-                            child: const Icon(Icons.close, color: Colors.white, size: 16),
+                  children: [
+                     ..._imageUrls.map((url) => Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(url, width: 80, height: 80, fit: BoxFit.cover),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () => setState(() => _imageUrls.remove(url)),
+                            child: Container(
+                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(Icons.close, color: Colors.white, size: 12),
+                            ),
                           ),
                         ),
+                      ],
+                    )),
+                    if (_isUploadingImage)
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       ),
-                    ],
-                  )).toList(),
+                  ],
                 ),
               ),
 
