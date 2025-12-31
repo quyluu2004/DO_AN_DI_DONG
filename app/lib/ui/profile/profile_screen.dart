@@ -95,80 +95,95 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = AuthService.instance.currentUser;
-    // Mock user data for display if real data is missing details
-    final displayName = user?.displayName ?? user?.email?.split('@')[0] ?? 'Khách';
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          // Avatar
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.grey[200],
-            child: Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black54),
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // Name and Tier
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    // Sử dụng StreamBuilder để lắng nghe thay đổi từ Firestore (Real-time)
+    return StreamBuilder<UserModel?>(
+      stream: UserService.instance.currentUserProfileStream(),
+      builder: (context, snapshot) {
+        final userModel = snapshot.data;
+        final authUser = AuthService.instance.currentUser;
+        
+        // Ưu tiên dữ liệu từ Firestore (User Model), fallback sang Auth User
+        final displayName = userModel?.fullName ?? authUser?.displayName ?? authUser?.email?.split('@')[0] ?? 'Khách';
+        final avatarUrl = userModel?.avatarUrl ?? authUser?.photoURL;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: (avatarUrl == null || avatarUrl.isEmpty)
+                    ? Text(
+                        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black54),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              
+              // Name and Tier
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                       displayName,
-                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                       maxLines: 1, 
-                       overflow: TextOverflow.ellipsis
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                             displayName,
+                             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                             maxLines: 1, 
+                             overflow: TextOverflow.ellipsis
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Google icon mock
+                        const Icon(Icons.g_mobiledata, size: 24, color: Colors.blue), 
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    // Google icon mock
-                    const Icon(Icons.g_mobiledata, size: 24, color: Colors.blue), 
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                           Icon(Icons.emoji_events, color: Colors.amber, size: 12),
+                           SizedBox(width: 4),
+                           Text('S0 >', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    )
                   ],
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                       Icon(Icons.emoji_events, color: Colors.amber, size: 12),
-                       SizedBox(width: 4),
-                       Text('S0 >', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                )
-              ],
-            ),
-          ),
+              ),
 
-          // Action Icons
-          IconButton(
-            onPressed: () {}, 
-            icon: const Icon(Icons.qr_code_scanner), 
-            tooltip: 'Quét mã',
+              // Action Icons
+              IconButton(
+                onPressed: () {}, 
+                icon: const Icon(Icons.qr_code_scanner), 
+                tooltip: 'Quét mã',
+              ),
+              IconButton(
+                onPressed: () {
+                   // Settings / Sign out
+                   _showSettings(context);
+                }, 
+                icon: const Icon(Icons.settings_outlined),
+                tooltip: 'Cài đặt',
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: () {
-               // Settings / Sign out
-               _showSettings(context);
-            }, 
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Cài đặt',
-          ),
-          // Badge for messages could be added here
-        ],
-      ),
+        );
+      }
     );
   }
 

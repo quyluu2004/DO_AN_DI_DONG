@@ -82,6 +82,14 @@ class UserService {
             },
           );
       
+      // Update Firebase Auth Profile (để UI đồng bộ ngay)
+      if (user.fullName.isNotEmpty) {
+        await currentUser.updateDisplayName(user.fullName);
+      }
+      if (user.avatarUrl != null) {
+        await currentUser.updatePhotoURL(user.avatarUrl);
+      }
+      
       if (kDebugMode) {
         debugPrint('UserService.createUserProfile: ✅ Lưu thành công!');
         // Verify lại sau khi lưu
@@ -213,7 +221,7 @@ class UserService {
       // Bước 3: Upload lên Cloudinary
       final downloadUrl = await uploadAvatarBytes(bytes);
 
-      // Bước 4: Cập nhật avatarUrl vào Firestore
+      // Update Firestore
       await _usersCol.doc(uid).update({
         'avatarUrl': downloadUrl,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -223,6 +231,9 @@ class UserService {
           throw TimeoutException('Cập nhật avatar quá lâu, vui lòng kiểm tra kết nối mạng.');
         },
       );
+
+      // Update Firebase Auth Profile (để UI update ngay lập tức)
+      await _auth.currentUser?.updatePhotoURL(downloadUrl);
 
       onLoading?.call(false);
       return downloadUrl;
@@ -261,6 +272,10 @@ class UserService {
           throw TimeoutException('Cập nhật avatar quá lâu, vui lòng kiểm tra kết nối mạng.');
         },
       );
+      
+      // Update Firebase Auth Profile
+      await _auth.currentUser?.updatePhotoURL(avatarUrl);
+
     } on FirebaseException catch (e) {
       throw Exception('Lỗi Firestore: ${e.message}');
     } catch (e) {
