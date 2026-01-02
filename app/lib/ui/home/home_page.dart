@@ -14,12 +14,13 @@ import '../product/product_detail_screen.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/favorite_provider.dart';
 import '../search/search_screen.dart';
-import '../search/search_screen.dart';
-import '../search/search_screen.dart';
 import '../cart/cart_screen.dart';
 import '../try_on/virtual_try_on_screen.dart'; // [UPDATED]
 import '../social_feed/social_feed_screen.dart'; // [NEW]
 import '../product/favorite_list_screen.dart';
+import '../../models/coupon_model.dart'; // [NEW]
+import '../../services/coupon_service.dart'; // [NEW]
+import '../components/flash_sale_widget.dart'; // [NEW]
 
 class FashionHomePage extends StatefulWidget {
   const FashionHomePage({super.key});
@@ -48,9 +49,28 @@ class _FashionHomePageState extends State<FashionHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _currentIndex,
+            children: _pages,
+          ),
+          // Flash Sale Widget Overlay
+          StreamBuilder<List<CouponModel>>(
+            stream: CouponService.instance.getFlashSaleCoupons(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+              final coupon = snapshot.data!.first;
+              if (coupon.endTime == null) return const SizedBox.shrink();
+              return FlashSaleWidget(
+                endTime: coupon.endTime!,
+                code: coupon.code,
+                discountValue: coupon.discountValue,
+                discountType: coupon.discountType,
+              );
+            },
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -115,9 +135,6 @@ class _HomeTab extends StatelessWidget {
                 // 7. Navigation Chips
                 const SliverToBoxAdapter(child: _NavigationChips()),
                 
-                // 7. Navigation Chips
-                const SliverToBoxAdapter(child: _NavigationChips()),
-
                 // 8. Promo Banner
                 const SliverToBoxAdapter(child: _PromoBanner()),
                 
@@ -793,29 +810,19 @@ class _PromoBanner extends StatelessWidget {
         
         if (config.imageUrl.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 12),
-          height: 180,
-          width: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.network(config.imageUrl, fit: BoxFit.cover),
-              if (config.title != null || config.subtitle != null)
-                Container(
-                  color: Colors.black26,
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (config.title != null)
-                        Text(config.title!, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                      if (config.subtitle != null)
-                        Text(config.subtitle!, style: const TextStyle(color: Colors.white, fontSize: 16)),
-                    ],
-                  ),
-                )
-            ],
+        return GestureDetector(
+          onTap: () {
+            // Handle navigation based on config.destination
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            height: 150,
+            width: double.infinity,
+            child: Image.network(
+              config.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
           ),
         );
       },

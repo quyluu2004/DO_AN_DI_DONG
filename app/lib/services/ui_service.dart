@@ -68,4 +68,32 @@ class UIService {
       'promoBanner': promoBanner.toMap(),
     }, SetOptions(merge: true));
   }
+
+  /// Lấy cấu hình Flash Sale mới nhất từ Server
+  Future<FlashSaleConfig?> fetchFlashSaleConfig() async {
+    final config = await getHomeConfig();
+    return config.flashSale;
+  }
+
+  /// Xử lý ghi nhận người dùng sử dụng Flash Sale
+  Future<void> processFlashSaleUsage(String uid, String userName, String appliedCode) async {
+    final currentConfig = await fetchFlashSaleConfig();
+    
+    if (currentConfig != null && currentConfig.isActive) {
+      // Chỉ xử lý nếu mã áp dụng trùng với mã Flash Sale
+      if (currentConfig.code != null && currentConfig.code == appliedCode) {
+        if (currentConfig.usedUserIds.contains(uid)) {
+          throw Exception("Bạn đã sử dụng ưu đãi này rồi!");
+        }
+        if (currentConfig.limit > 0 && currentConfig.usedUserIds.length >= currentConfig.limit) {
+          throw Exception("Mã giảm giá đã hết lượt sử dụng!");
+        }
+
+        currentConfig.usedUserIds.add(uid);
+        currentConfig.usageHistory.add({'uid': uid, 'name': userName, 'time': DateTime.now().millisecondsSinceEpoch});
+
+        await updateFlashSale(currentConfig);
+      }
+    }
+  }
 }

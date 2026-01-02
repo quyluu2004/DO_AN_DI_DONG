@@ -9,6 +9,7 @@ import '../../models/order_model.dart';
 import '../../models/address_model.dart';
 import '../../models/coupon_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/ui_service.dart';
 import '../address/address_list_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -442,6 +443,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     try {
+      // [MỚI] Xử lý Flash Sale: Ghi nhận người dùng nếu dùng mã Flash Sale
+      if (cartProvider.appliedCoupon != null) {
+        await UIService.instance.processFlashSaleUsage(
+          userId,
+          address.name, // Dùng tên người nhận hàng
+          cartProvider.appliedCoupon!.code,
+        );
+      }
+
       // Gọi Provider tạo đơn hàng
       await context.read<OrderProvider>().createOrder(order);
       

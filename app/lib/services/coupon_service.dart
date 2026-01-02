@@ -21,6 +21,17 @@ class CouponService {
     });
   }
 
+  // 1.1 Hàm lấy danh sách Flash Sale (Dùng cho Home Page)
+  Stream<List<CouponModel>> getFlashSaleCoupons() {
+    return _couponsRef
+        .where('isFlashSale', isEqualTo: true)
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => CouponModel.fromDoc(doc)).toList();
+    });
+  }
+
   // 2. Hàm thêm mã mới
   Future<void> addCoupon(CouponModel coupon) async {
     // Lưu ý: toMap() ở đây lấy từ Model, không cần truyền ID vì Firestore tự tạo

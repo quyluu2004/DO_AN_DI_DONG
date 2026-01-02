@@ -12,6 +12,8 @@ class CouponModel {
   final bool isActive;
   final DateTime startDate;
   final DateTime endDate;
+  final bool isFlashSale;
+  final DateTime? endTime;
 
   CouponModel({
     required this.id,
@@ -25,6 +27,8 @@ class CouponModel {
     required this.isActive,
     required this.startDate,
     required this.endDate,
+    this.isFlashSale = false,
+    this.endTime,
   });
 
   Map<String, dynamic> toMap() {
@@ -39,6 +43,8 @@ class CouponModel {
       'isActive': isActive,
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
+      'isFlashSale': isFlashSale,
+      'endTime': endTime != null ? Timestamp.fromDate(endTime!) : null,
     };
   }
 
@@ -56,6 +62,8 @@ class CouponModel {
       isActive: map['isActive'] ?? true,
       startDate: (map['startDate'] as Timestamp).toDate(),
       endDate: (map['endDate'] as Timestamp).toDate(),
+      isFlashSale: map['isFlashSale'] ?? false,
+      endTime: map['endTime'] != null ? (map['endTime'] as Timestamp).toDate() : null,
     );
   }
 }
