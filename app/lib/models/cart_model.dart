@@ -10,7 +10,7 @@ class CartItem {
   final String? size;
   final String? color;
   final String? tryOnImageUrl; // [NEW]
-  final String? subCategory;   // [NEW]
+  final String subCategory;   // [NEW] Changed to non-nullable
   int quantity;
   bool isSelected;
 
@@ -23,7 +23,7 @@ class CartItem {
     this.size,
     this.color,
     this.tryOnImageUrl,
-    this.subCategory,
+    this.subCategory = '', // Default to empty string
     this.quantity = 1,
     this.isSelected = true,
   });
@@ -56,7 +56,7 @@ class CartItem {
       size: map['size'],
       color: map['color'],
       tryOnImageUrl: map['tryOnImageUrl'],
-      subCategory: map['subCategory'],
+      subCategory: map['subCategory'] ?? '',
       quantity: map['quantity'] ?? 1,
       isSelected: map['isSelected'] ?? true, // Default to selected
     );

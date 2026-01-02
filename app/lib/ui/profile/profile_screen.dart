@@ -18,6 +18,7 @@ import '../../providers/favorite_provider.dart';
 import '../../providers/history_provider.dart';
 import '../loyalty/loyalty_screen.dart'; // [NEW]
 import '../../services/loyalty_service.dart'; // [NEW]
+import '../components/profile_stats_section.dart'; // [NEW] Import widget mới
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -56,7 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SliverToBoxAdapter(child: _ProfileHeader()),
               
               // 2. Stats Row (Coupons, Points...)
-              const SliverToBoxAdapter(child: _StatsRow()),
+              const SliverToBoxAdapter(child: ProfileStatsSection()), 
               
               const SliverToBoxAdapter(child: Divider(height: 1, thickness: 8, color: Color(0xFFF5F5F5))),
 
@@ -230,54 +231,6 @@ class _ProfileHeader extends StatelessWidget {
          ],
        )
      );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<UserModel?>(
-      stream: UserService.instance.currentUserProfileStream(),
-      builder: (context, snapshot) {
-        final points = snapshot.data?.points ?? 0;
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              const _StatItem(value: '9', label: 'Mã giảm giá'),
-              _StatItem(value: '$points', label: 'Điểm'),
-              const _StatItem(icon: Icons.account_balance_wallet_outlined, label: 'Ví'),
-              const _StatItem(icon: Icons.card_giftcard, label: 'Quà tặng'),
-            ],
-          ),
-        );
-      }
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String? value;
-  final IconData? icon;
-  final String label;
-
-  const _StatItem({this.value, this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (value != null)
-          Text(value!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-        else
-          Icon(icon, size: 24, color: Colors.black87),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
-    );
   }
 }
 
