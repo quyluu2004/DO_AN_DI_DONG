@@ -2,29 +2,43 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CouponModel {
   final String id;
-  final String code;
-  final double discountAmount; 
-  final double minOrderValue;
+  final String code;        // Mã: SALE50
+  final String title;       // Tên: Giảm 50% áo thun
+  final String discountType; // 'percent' hoặc 'fixed'
+  final double discountValue; // Giá trị: 10 (10%) hoặc 50000 (50k)
+  final double? maxDiscount;  // Tối đa giảm bao nhiêu (cho loại percent)
+  final double minOrderValue; // Đơn tối thiểu
+  final List<String> targetCategories; // Danh sách category áp dụng (Rỗng = All)
   final bool isActive;
-  final DateTime createdAt;
+  final DateTime startDate;
+  final DateTime endDate;
 
   CouponModel({
     required this.id,
     required this.code,
-    required this.discountAmount,
+    required this.title,
+    required this.discountType,
+    required this.discountValue,
+    this.maxDiscount,
     required this.minOrderValue,
-    required this.createdAt,
-    this.isActive = true,
+    required this.targetCategories,
+    required this.isActive,
+    required this.startDate,
+    required this.endDate,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'code': code,
-      'discountAmount': discountAmount,
+      'code': code.toUpperCase(),
+      'title': title,
+      'discountType': discountType,
+      'discountValue': discountValue,
+      'maxDiscount': maxDiscount,
       'minOrderValue': minOrderValue,
+      'targetCategories': targetCategories,
       'isActive': isActive,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'startDate': Timestamp.fromDate(startDate),
+      'endDate': Timestamp.fromDate(endDate),
     };
   }
 
@@ -33,10 +47,15 @@ class CouponModel {
     return CouponModel(
       id: doc.id,
       code: map['code'] ?? '',
-      discountAmount: (map['discountAmount'] ?? 0).toDouble(),
+      title: map['title'] ?? '',
+      discountType: map['discountType'] ?? 'fixed',
+      discountValue: (map['discountValue'] ?? 0).toDouble(),
+      maxDiscount: map['maxDiscount'] != null ? (map['maxDiscount']).toDouble() : null,
       minOrderValue: (map['minOrderValue'] ?? 0).toDouble(),
+      targetCategories: List<String>.from(map['targetCategories'] ?? []),
       isActive: map['isActive'] ?? true,
-      createdAt: (map['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
+      startDate: (map['startDate'] as Timestamp).toDate(),
+      endDate: (map['endDate'] as Timestamp).toDate(),
     );
   }
 }

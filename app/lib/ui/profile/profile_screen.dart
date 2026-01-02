@@ -12,6 +12,7 @@ import '../product/product_detail_screen.dart';
 import '../order/order_history_screen.dart';
 import '../address/address_list_screen.dart';
 import 'my_posts_screen.dart';
+import '../components/profile_stats_section.dart'; // [NEW] Import widget mới
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -50,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SliverToBoxAdapter(child: _ProfileHeader()),
               
               // 2. Stats Row (Coupons, Points...)
-              const SliverToBoxAdapter(child: _StatsRow()),
+              const SliverToBoxAdapter(child: ProfileStatsSection()), // [NEW] Thay thế _StatsRow bằng ProfileStatsSection
               
               const SliverToBoxAdapter(child: Divider(height: 1, thickness: 8, color: Color(0xFFF5F5F5))),
 

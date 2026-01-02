@@ -1,49 +1,111 @@
-
 import 'package:flutter/foundation.dart';
 import '../models/cart_model.dart';
 import '../models/product_model.dart';
-import '../services/coupon_service.dart'; // [NEW]
-import '../models/coupon_model.dart'; // [NEW]
-
+import '../services/coupon_service.dart';
+import '../models/coupon_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 class CartProvider extends ChangeNotifier {
   Cart _cart = Cart(userId: '');
-
-  Cart get cart => _cart;
-
-  // Return total count of ALL items (for badge)
-  int get itemCount => _cart.items.fold(0, (sum, item) => sum + item.quantity);
   
-  // Return count of SELECTED items (for checkout button)
+  // Getter cơ bản
+  Cart get cart => _cart;
+  int get itemCount => _cart.items.fold(0, (sum, item) => sum + item.quantity);
   int get selectedItemCount => _cart.items.where((i) => i.isSelected).length;
 
-  // Return total price of SELECTED items
-  // Return total price of SELECTED items (Scanning implementation)
+  // Tổng tiền hàng tạm tính (chưa giảm)
   double get subtotal => _cart.items
       .where((item) => item.isSelected)
       .fold(0.0, (sum, item) => sum + item.totalPrice);
-  
+
+  // --- LOGIC COUPON MỚI ---
   CouponModel? _appliedCoupon;
   CouponModel? get appliedCoupon => _appliedCoupon;
   String? _couponError;
   String? get couponError => _couponError;
 
+  // Tính số tiền được giảm (Logic cốt lõi - Đã nâng cấp)
   double get discountAmount {
     if (_appliedCoupon == null) return 0;
-    return _appliedCoupon!.discountAmount;
+
+    double amountEligibleForDiscount = 0.0;
+    
+    // Lấy danh sách các món hàng ĐƯỢC CHỌN
+    final selectedItems = _cart.items.where((item) => item.isSelected);
+
+    // TRƯỜNG HỢP 1: Mã áp dụng cho TOÀN BỘ (targetCategories rỗng)
+    if (_appliedCoupon!.targetCategories.isEmpty) {
+      amountEligibleForDiscount = subtotal;
+    } 
+    // TRƯỜNG HỢP 2: Mã áp dụng cho DANH MỤC CỤ THỂ
+    else {
+      for (var item in selectedItems) {
+        bool isMatch = false;
+
+        // --- CÁCH 1: So sánh subCategory (Không phân biệt hoa thường) ---
+        // Ví dụ: Voucher "Áo" vẫn ăn với sản phẩm loại "áo" hoặc " ÁO "
+        if (_appliedCoupon!.targetCategories.any((cat) => 
+            cat.trim().toLowerCase() == item.subCategory.trim().toLowerCase())) {
+          isMatch = true;
+        }
+
+        // --- CÁCH 2: So sánh Tên sản phẩm (Thông minh) ---
+        // Nếu subCategory bị rỗng (do quên nhập liệu), nhưng tên sản phẩm là "Áo vest"
+        // và voucher áp dụng cho "Áo" -> Vẫn cho giảm giá.
+        if (!isMatch) {
+           if (_appliedCoupon!.targetCategories.any((cat) => 
+              item.productName.toLowerCase().contains(cat.trim().toLowerCase()))) {
+             isMatch = true;
+           }
+        }
+
+        if (isMatch) {
+          amountEligibleForDiscount += item.totalPrice;
+        }
+      }
+    }
+
+    // Nếu không có món nào được giảm (amountEligibleForDiscount = 0)
+    if (amountEligibleForDiscount == 0) return 0;
+
+    double finalDiscount = 0.0;
+    
+    // Tính toán dựa trên loại (Percent hoặc Fixed)
+    if (_appliedCoupon!.discountType == 'percent') {
+      finalDiscount = amountEligibleForDiscount * (_appliedCoupon!.discountValue / 100);
+      // Kiểm tra giảm tối đa (Max Discount)
+      if (_appliedCoupon!.maxDiscount != null && finalDiscount > _appliedCoupon!.maxDiscount!) {
+        finalDiscount = _appliedCoupon!.maxDiscount!;
+      }
+    } else {
+      // Fixed amount
+      finalDiscount = _appliedCoupon!.discountValue;
+    }
+
+    // Không bao giờ giảm quá tổng tiền hàng (tránh số âm)
+    return finalDiscount > subtotal ? subtotal : finalDiscount;
   }
 
+  // Tổng tiền cuối cùng khách phải trả
   double get totalAmount {
     double total = subtotal - discountAmount;
     return total > 0 ? total : 0;
   }
-  
+
+  // Hàm áp dụng mã
   Future<void> applyCoupon(String code) async {
     _couponError = null;
     notifyListeners();
-    
+
     try {
+      // 1. Kiểm tra mã có tồn tại không
       final coupon = await CouponService.instance.validateCoupon(code, subtotal);
+      
       if (coupon != null) {
+        // 2. Kiểm tra điều kiện đơn tối thiểu
+        if (subtotal < coupon.minOrderValue) {
+           throw Exception("Đơn hàng chưa đạt tối thiểu ${coupon.minOrderValue}");
+        }
+        
         _appliedCoupon = coupon;
         notifyListeners();
       }
@@ -51,7 +113,7 @@ class CartProvider extends ChangeNotifier {
       _appliedCoupon = null;
       _couponError = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
-      rethrow;
+      rethrow; // Ném lỗi để UI hiển thị Snackbar nếu cần
     }
   }
 
@@ -60,7 +122,9 @@ class CartProvider extends ChangeNotifier {
     _couponError = null;
     notifyListeners();
   }
-  
+  // --- KẾT THÚC LOGIC COUPON ---
+
+  // Các hàm Cart cũ giữ nguyên
   bool get isAllSelected => _cart.items.isNotEmpty && _cart.items.every((item) => item.isSelected);
 
   void addToCart(Product product, {String? size, String? color, int quantity = 1}) {
@@ -78,8 +142,8 @@ class CartProvider extends ChangeNotifier {
         quantity: quantity,
         size: size,
         color: color,
-        tryOnImageUrl: product.tryOnImageUrl, // [NEW]
-        subCategory: product.subCategory,     // [NEW]
+        tryOnImageUrl: product.tryOnImageUrl,
+        subCategory: product.subCategory ?? '', // QUAN TRỌNG: Cần trường này để phân loại khi giảm giá
       ));
     }
     notifyListeners();
@@ -88,6 +152,11 @@ class CartProvider extends ChangeNotifier {
   void removeFromCart(String productId, String? size, String? color) {
     _cart.items.removeWhere((item) =>
         item.productId == productId && item.size == size && item.color == color);
+    
+    // Nếu xóa sản phẩm dẫn đến tổng tiền < minOrderValue của mã giảm giá -> Tự động hủy mã
+    if (_appliedCoupon != null && subtotal < _appliedCoupon!.minOrderValue) {
+      removeCoupon();
+    }
     notifyListeners();
   }
 
@@ -107,10 +176,9 @@ class CartProvider extends ChangeNotifier {
 
   void clearCart() {
     _cart = Cart(userId: _cart.userId);
+    _appliedCoupon = null; // Xóa mã khi xóa giỏ
     notifyListeners();
   }
-  
-
 
   void toggleSelection(String productId, String? size, String? color) {
     final index = _cart.items.indexWhere((item) =>
@@ -129,6 +197,4 @@ class CartProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-  
-  // TODO: Sync cart to Firestore if user is logged in
 }

@@ -1,3 +1,4 @@
+// app/lib/ui/checkout/checkout_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -8,7 +9,6 @@ import '../../models/order_model.dart';
 import '../../models/address_model.dart';
 import '../../models/coupon_model.dart';
 import '../../services/auth_service.dart';
-import '../../services/coupon_service.dart';
 import '../address/address_list_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -20,10 +20,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String _paymentMethod = 'Credit/Debit Card';
-  bool _isShippingGuarantee = true;
   final TextEditingController _couponController = TextEditingController();
-  CouponModel? _appliedCoupon;
-  String? _couponError;
   bool _isValidatingCoupon = false;
 
   String get _deliveryDateEstimate {
@@ -50,42 +47,43 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  Future<void> _applyCoupon(double currentSubtotal) async {
+  // [SỬA LỖI 1 & 2] Chuyển toàn bộ logic áp mã sang Provider xử lý
+  Future<void> _applyCoupon() async {
     final code = _couponController.text.trim();
     if (code.isEmpty) return;
 
-    setState(() {
-      _isValidatingCoupon = true;
-      _couponError = null;
-    });
+    setState(() => _isValidatingCoupon = true);
+    
+    // Ẩn bàn phím
+    FocusScope.of(context).unfocus();
 
     try {
-      final coupon = await CouponService.instance.getCouponByCode(code);
-      if (coupon == null) {
-        setState(() => _couponError = 'Mã giảm giá không tồn tại hoặc đã hết hạn');
-      } else if (currentSubtotal < coupon.minOrderValue) {
-        final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
-        setState(() => _couponError = 'Đơn hàng chưa đạt tối thiểu ${formatter.format(coupon.minOrderValue)}');
-      } else {
-        setState(() {
-          _appliedCoupon = coupon;
-          _couponError = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Áp dụng mã giảm giá thành công!')));
+      // Gọi hàm trong Provider để validate và tính toán
+      await context.read<CartProvider>().applyCoupon(code);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Áp dụng mã giảm giá thành công!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green)
+        );
       }
     } catch (e) {
-      setState(() => _couponError = 'Lỗi khi kiểm tra mã: $e');
+      // Provider sẽ ném lỗi nếu mã không hợp lệ (hết hạn, chưa đủ tiền...)
+      if (mounted) {
+        // Lỗi đã được lưu trong provider.couponError, nhưng hiển thị snackbar cho rõ
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red)
+        );
+      }
     } finally {
-      setState(() => _isValidatingCoupon = false);
+      if (mounted) {
+        setState(() => _isValidatingCoupon = false);
+      }
     }
   }
 
   void _removeCoupon() {
-    setState(() {
-      _appliedCoupon = null;
-      _couponController.clear();
-      _couponError = null;
-    });
+    context.read<CartProvider>().removeCoupon();
+    _couponController.clear();
   }
 
   void _selectAddress() {
@@ -97,19 +95,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // [QUAN TRỌNG] Lắng nghe CartProvider để update UI khi tiền thay đổi
     final cart = context.watch<CartProvider>();
     final addressProvider = context.watch<AddressProvider>();
     final address = addressProvider.selectedAddress;
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     
-    // Calculations
-    double subtotal = cart.totalAmount;
+    // [SỬA LỖI 3] Lấy số liệu trực tiếp từ Provider
+    double subtotal = cart.subtotal; // Tổng tiền hàng chưa giảm
     double shippingFee = 12000;
     double shippingDiscount = 12000; // Freeship
-    double shippingGuaranteeFee = 0;
-    double couponDiscount = _appliedCoupon?.discountAmount ?? 0;
     
-    double grandTotal = subtotal + (shippingFee - shippingDiscount) + shippingGuaranteeFee - couponDiscount;
+    // Lấy tiền giảm từ Provider (đã tính toán chính xác theo danh mục)
+    double couponDiscount = cart.discountAmount; 
+    
+    // Tính tổng cuối cùng
+    double grandTotal = subtotal + (shippingFee - shippingDiscount) - couponDiscount;
     if (grandTotal < 0) grandTotal = 0;
 
     double savedAmount = shippingDiscount + couponDiscount;
@@ -122,14 +123,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         elevation: 0,
         centerTitle: true,
         leading: const BackButton(color: Colors.black),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.support_agent_outlined, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
       ),
-      body: cart.itemCount == 0
+      body: cart.cart.items.isEmpty // Kiểm tra items trong cart
           ? const Center(child: Text('Giỏ hàng trống'))
           : Column(
               children: [
@@ -219,178 +214,50 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('Sản phẩm (${cart.itemCount})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                ],
-                              ),
+                              Text('Sản phẩm (${cart.selectedItemCount})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               const SizedBox(height: 16),
-                              ...cart.cart.items.map((item) => Padding(
+                              // Chỉ hiện các item ĐƯỢC CHỌN (isSelected = true)
+                              ...cart.cart.items.where((i) => i.isSelected).map((item) => Padding(
                                 padding: const EdgeInsets.only(bottom: 24.0),
-                                child: Column(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Product Image
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(4),
-                                          child: Image.network(
-                                            item.imageUrl,
-                                            width: 80,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_,__,___) => Container(width: 80, height: 100, color: Colors.grey[200]),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        // Details
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: Image.network(
+                                        item.imageUrl,
+                                        width: 80, height: 100, fit: BoxFit.cover,
+                                        errorBuilder: (_,__,___) => Container(width: 80, height: 100, color: Colors.grey[200]),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(item.productName, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, height: 1.2)),
+                                          const SizedBox(height: 4),
+                                          Text('${item.color ?? 'Mặc định'} / ${item.size ?? 'Freesize'}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Text(
-                                                item.productName,
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(fontSize: 14, height: 1.2),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '${item.color ?? 'Nhiều màu'} / ${item.size ?? 'Freesize'}',
-                                                style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    currencyFormat.format(item.price),
-                                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                                  ),
-                                                  Text('x ${item.quantity}'),
-                                                ],
-                                              ),
+                                              Text(currencyFormat.format(item.price), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                              Text('x ${item.quantity}'),
                                             ],
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
                               )),
-                              
-                              const Divider(height: 24),
-                              
-                              // Shipping Method
-                              const Text('Phương thức vận chuyển', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                              const SizedBox(height: 12),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.check_circle, color: Colors.black, size: 24),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            const Text('Tiêu chuẩn', style: TextStyle(fontSize: 15)),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                              color: const Color(0xFFE8F5E9),
-                                              child: const Text('Freeship', style: TextStyle(fontSize: 10, color: Colors.green)),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        RichText(
-                                          text: TextSpan(
-                                            style: const TextStyle(color: Colors.black87, fontSize: 13), // Default font
-                                            children: [
-                                              const TextSpan(text: '0đ ', style: TextStyle(fontWeight: FontWeight.bold)),
-                                              TextSpan(
-                                                text: currencyFormat.format(shippingFee), // '12.000đ'
-                                                style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey),
-                                              ),
-                                              TextSpan(text: ' ($_deliveryDateEstimate)'),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ],
                           ),
                         ),
                         
                         const SizedBox(height: 12),
                         
-                        // Payment Method
-                        Container(
-                          color: Colors.white,
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Text('Phương thức thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                  const Spacer(),
-                                  const Icon(Icons.verified_user_outlined, size: 14, color: Colors.green),
-                                  const SizedBox(width: 4),
-                                  const Text('Bảo mật', style: TextStyle(color: Colors.green, fontSize: 12)),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // Credit/Debit Card
-                              InkWell(
-                                onTap: () => setState(() => _paymentMethod = 'Credit/Debit Card'),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _paymentMethod == 'Credit/Debit Card' ? Icons.check_circle : Icons.radio_button_unchecked, 
-                                      color: _paymentMethod == 'Credit/Debit Card' ? Colors.black : Colors.grey
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Icon(Icons.credit_card, size: 28),
-                                    const SizedBox(width: 12),
-                                    const Text('Thẻ Tín dụng/Ghi nợ', style: TextStyle(fontSize: 15)),
-                                  ],
-                                ),
-                              ),
-                              
-                              const SizedBox(height: 16),
-                              
-                              // COD
-                              InkWell(
-                                onTap: () => setState(() => _paymentMethod = 'COD'),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _paymentMethod == 'COD' ? Icons.check_circle : Icons.radio_button_unchecked, 
-                                      color: _paymentMethod == 'COD' ? Colors.black : Colors.grey
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Icon(Icons.local_shipping_outlined, size: 28),
-                                    const SizedBox(width: 12),
-                                    const Text('Thanh toán khi nhận hàng (COD)', style: TextStyle(fontSize: 15)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-
-                        const SizedBox(height: 12),
-
                         // Coupons Section
                         Container(
                           color: Colors.white,
@@ -409,45 +276,50 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                          hintText: 'Nhập mã giảm giá',
                                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                         suffixIcon: _isValidatingCoupon 
-                                           ? const Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator(strokeWidth: 2))
-                                           : null,
                                        ),
                                      ),
                                    ),
                                    const SizedBox(width: 8),
                                    ElevatedButton(
-                                     onPressed: () => _applyCoupon(subtotal),
-                                     style: ElevatedButton.styleFrom(
-                                       backgroundColor: Colors.black,
-                                       foregroundColor: Colors.white,
-                                     ),
-                                     child: const Text('Áp dụng'),
+                                     onPressed: _isValidatingCoupon ? null : _applyCoupon,
+                                     style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                                     child: _isValidatingCoupon 
+                                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                         : const Text('Áp dụng'),
                                    ),
                                  ],
                                ),
-                               if (_couponError != null)
+                               
+                               // Hiển thị lỗi từ Provider nếu có
+                               if (cart.couponError != null)
                                  Padding(
                                    padding: const EdgeInsets.only(top: 8.0),
-                                   child: Text(_couponError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                                   child: Text(cart.couponError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
                                  ),
-                               if (_appliedCoupon != null)
+                               
+                               // Hiển thị mã đã áp dụng
+                               if (cart.appliedCoupon != null)
                                  Padding(
                                    padding: const EdgeInsets.only(top: 8.0),
-                                   child: Row(
-                                     children: [
-                                       const Icon(Icons.confirmation_number_outlined, color: Colors.green, size: 16),
-                                       const SizedBox(width: 4),
-                                       Text(
-                                         'Đã dùng mã: ${_appliedCoupon!.code} (-${currencyFormat.format(_appliedCoupon!.discountAmount)})',
-                                         style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                                       ),
-                                       const Spacer(),
-                                       InkWell(
-                                         onTap: _removeCoupon,
-                                         child: const Icon(Icons.close, size: 16, color: Colors.grey),
-                                       ),
-                                     ],
+                                   child: Container(
+                                     padding: EdgeInsets.all(8),
+                                     decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green)),
+                                     child: Row(
+                                       children: [
+                                         const Icon(Icons.confirmation_number_outlined, color: Colors.green, size: 16),
+                                         const SizedBox(width: 4),
+                                         Expanded(
+                                           child: Text(
+                                             'Mã: ${cart.appliedCoupon!.code} (-${currencyFormat.format(cart.discountAmount)})',
+                                             style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                           ),
+                                         ),
+                                         InkWell(
+                                           onTap: _removeCoupon,
+                                           child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                                         ),
+                                       ],
+                                     ),
                                    ),
                                  ),
                              ],
@@ -462,16 +334,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             children: [
-                              _SummaryRow(label: 'Tạm tính (${cart.itemCount} món)', value: currencyFormat.format(subtotal)),
+                              _SummaryRow(label: 'Tạm tính (${cart.selectedItemCount} món)', value: currencyFormat.format(subtotal)),
                               const SizedBox(height: 8),
                               _SummaryRow(
                                 label: 'Phí vận chuyển:', 
-                                value: currencyFormat.format(shippingFee), // '12.000đ'
+                                value: currencyFormat.format(shippingFee),
                                 valueColor: Colors.grey,
                                 isStrikethrough: true,
                                 suffix: const Text('Miễn phí', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                               ),
-                              if (_appliedCoupon != null) ...[
+                              if (cart.appliedCoupon != null) ...[
                                 const SizedBox(height: 8),
                                 _SummaryRow(
                                   label: 'Voucher giảm giá:', 
@@ -497,7 +369,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 100), // Space for bottom bar
+                        const SizedBox(height: 100), 
                       ],
                     ),
                   ),
@@ -522,13 +394,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text('Tổng: ', style: const TextStyle(fontSize: 12)),
-                        Text(currencyFormat.format(grandTotal), style: const TextStyle(color: Colors.red, fontSize: 18, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Text('Tiết kiệm ${currencyFormat.format(savedAmount)}', style: const TextStyle(color: Colors.orange, fontSize: 12)),
+                    Text('Tổng thanh toán', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(currencyFormat.format(grandTotal), style: const TextStyle(color: Colors.red, fontSize: 18, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const Spacer(),
@@ -543,7 +410,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
                   ),
                   child: const Text('ĐẶT HÀNG', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
@@ -557,39 +424,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   void _placeOrder(CartProvider cartProvider, double total, Address address) async {
     final user = AuthService.instance.currentUser;
-    // For demo purposes, allow even without logged in user, or default to a mock ID
     final userId = user?.uid ?? 'guest_123';
 
+    // Tạo đơn hàng
     final order = OrderModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       userId: userId,
-      items: cartProvider.cart.items,
+      // Lưu ý: Chỉ lưu các item ĐƯỢC CHỌN vào đơn hàng
+      items: cartProvider.cart.items.where((i) => i.isSelected).toList(),
       totalAmount: total,
       shippingAddress: address,
       status: OrderStatus.pending,
       paymentMethod: _paymentMethod,
       createdAt: DateTime.now(),
-      discountAmount: _appliedCoupon?.discountAmount ?? 0,
-      couponCode: _appliedCoupon?.code,
+      discountAmount: cartProvider.discountAmount,
+      couponCode: cartProvider.appliedCoupon?.code,
     );
 
     try {
+      // Gọi Provider tạo đơn hàng
       await context.read<OrderProvider>().createOrder(order);
-      cartProvider.clearCart();
+      
+      // Sau khi đặt thành công:
+      // 1. Xóa các món đã mua khỏi giỏ hàng (không phải xóa hết nếu còn món chưa chọn)
+      // cartProvider.removeSelectedItems(); // Cần viết hàm này trong Provider sau
+      cartProvider.clearCart(); // Tạm thời clear hết để demo
       
       if (mounted) {
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (_) => AlertDialog(
-            title: const Icon(Icons.check_circle, color: Colors.green, size: 50),
-            content: const Text('Đặt hàng thành công!', textAlign: TextAlign.center),
+            icon: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+            title: const Text('Đặt hàng thành công!', textAlign: TextAlign.center),
+            content: const Text('Cảm ơn bạn đã mua sắm tại Foodie/Fashion.'),
             actions: [
               TextButton(
                 onPressed: () {
+                  // Quay về màn hình Home (xóa hết các màn hình trước đó)
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: const Text('Về trang chủ'),
+                child: const Text('Về trang chủ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               )
             ],
           ),
