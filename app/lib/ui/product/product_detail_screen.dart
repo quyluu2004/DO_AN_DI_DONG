@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../models/product_model.dart';
 import '../../models/review_model.dart'; // [NEW]
 import '../../services/review_service.dart'; // [NEW]
+import '../../providers/history_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../theme/app_theme.dart';
 
@@ -49,6 +50,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _colors = uniqueColors.toList();
       });
     }
+
+    // Add to history
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HistoryProvider>().addToHistory(widget.product.id);
+    });
   }
 
   void _addToCart() {

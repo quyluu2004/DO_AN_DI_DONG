@@ -12,6 +12,10 @@ import '../product/product_detail_screen.dart';
 import '../order/order_history_screen.dart';
 import '../address/address_list_screen.dart';
 import 'my_posts_screen.dart';
+import 'history_screen.dart';
+import 'favorite_screen.dart';
+import '../../providers/favorite_provider.dart';
+import '../../providers/history_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -438,9 +442,27 @@ class _EngagementSection extends StatelessWidget {
           children: [
              Expanded(child: _EngagementItem(label: 'Đang theo dõi', subLabel: '0 shop', icon: Icons.storefront_outlined)),
              const VerticalDivider(),
-             Expanded(child: _EngagementItem(label: 'Lịch sử xem', subLabel: '104 sản phẩm', icon: Icons.history_outlined)),
+             Expanded(
+               child: Consumer<HistoryProvider>(
+                 builder: (_, history, __) => _EngagementItem(
+                   label: 'Lịch sử xem', 
+                   subLabel: '${history.viewedProductIds.length} sản phẩm', 
+                   icon: Icons.history_outlined,
+                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
+                 ),
+               ),
+             ),
              const VerticalDivider(),
-             Expanded(child: _EngagementItem(label: 'Yêu thích', subLabel: '0 sản phẩm', icon: Icons.favorite_border)),
+             Expanded(
+               child: Consumer<FavoriteProvider>(
+                 builder: (_, fav, __) => _EngagementItem(
+                   label: 'Yêu thích', 
+                   subLabel: '${fav.favoriteIds.length} sản phẩm', 
+                   icon: Icons.favorite_border,
+                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoriteListScreen())),
+                 ),
+               ),
+             ),
           ],
         ),
       ),
@@ -452,23 +474,28 @@ class _EngagementItem extends StatelessWidget {
   final String label;
   final String subLabel;
   final IconData icon;
-  const _EngagementItem({required this.label, required this.subLabel, required this.icon});
+  final VoidCallback? onTap;
+
+  const _EngagementItem({required this.label, required this.subLabel, required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: Colors.black87),
-            const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(subLabel, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-      ],
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: Colors.black87),
+              const SizedBox(width: 4),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(subLabel, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        ],
+      ),
     );
   }
 }

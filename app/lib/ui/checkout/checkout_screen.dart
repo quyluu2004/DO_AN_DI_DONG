@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/address_provider.dart';
@@ -555,9 +556,105 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  void _placeOrder(CartProvider cartProvider, double total, Address address) async {
+  Future<void> _handleMoMoPayment(double amount) async {
+    // Số điện thoại nhận tiền (Hardcode cho demo)
+    const receiverPhone = "0399999999"; 
+    final note = "Thanh toan don hang FashionApp";
+    
+    // Tạo Deep Link MoMo
+    // Format: momo://?action=transfer&to=[PHONE]&amount=[AMOUNT]&note=[NOTE]
+    final Uri momoUrl = Uri.parse(
+      "momo://?action=transfer&to=$receiverPhone&amount=${amount.toInt()}&note=$note"
+    );
+
+    try {
+      if (await canLaunchUrl(momoUrl)) {
+        await launchUrl(momoUrl, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback nếu không mở được app (ví dụ máy ảo không có MoMo)
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Không thể mở ứng dụng MoMo. Hãy đảm bảo bạn đã cài đặt MoMo.')),
+           );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error launching MoMo: $e');
+    }
+    
+    // Sau khi mở App (hoặc fail), hiện dialog trác nhận thủ công
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+           children: const [
+             Icon(Icons.payment, color: Colors.pink),
+             SizedBox(width: 8),
+             Text('Xác nhận thanh toán'),
+           ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Vui lòng hoàn tất chuyển tiền trên ứng dụng MoMo.'),
+            const SizedBox(height: 12),
+            Text('Số tiền: ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(amount)}', 
+                 style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text('Người nhận: SHOP THOI TRANG (0399999999)'),
+            const SizedBox(height: 16),
+            const Text('Sau khi chuyển khoản thành công, vui lòng bấm nút bên dưới để hoàn tất đơn hàng.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx), // Huỷ
+            child: const Text('Quay lại', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Đóng dialog
+              _confirmOrderPlacement(); // Gọi hàm tạo đơn hàng thực sự
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
+            child: const Text('Đã thanh toán xong'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _placeOrder(CartProvider cartProvider, double total, Address address) {
+     if (_paymentMethod == 'MoMo') {
+       _handleMoMoPayment(total);
+     } else {
+       _confirmOrderPlacement();
+     }
+  }
+
+  // Tách logic tạo đơn hàng ra riêng để tái sử dụng
+  void _confirmOrderPlacement() async {
+    final cartProvider = context.read<CartProvider>();
+    final addressProvider = context.read<AddressProvider>();
+    final address = addressProvider.selectedAddress!;
+    
+    // Recalculate total just to be safe or pass it down. 
+    // Simplify usage here since we passed data to _placeOrder previously but now splitting info.
+    // Better to store 'grandTotal' in state or recalc. For now, let's recalculate quickly or check how to access.
+    // Actually, accessing cart state again is safer.
+    
+    // ... Re-calculating grand total locally for Order Model ...
+    double subtotal = cartProvider.totalAmount;
+    double shippingFee = 12000;
+    double shippingDiscount = 12000;
+    double couponDiscount = _appliedCoupon?.discountAmount ?? 0;
+    double total = subtotal + (shippingFee - shippingDiscount) - couponDiscount;
+    if (total < 0) total = 0;
+
     final user = AuthService.instance.currentUser;
-    // For demo purposes, allow even without logged in user, or default to a mock ID
     final userId = user?.uid ?? 'guest_123';
 
     final order = OrderModel(

@@ -7,6 +7,7 @@ import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/address_provider.dart';
 import 'providers/favorite_provider.dart';
+import 'providers/history_provider.dart';
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => AddressProvider()),
         ChangeNotifierProvider(create: (_) => FavoriteProvider()..loadFavorites()),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

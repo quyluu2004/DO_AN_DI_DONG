@@ -315,6 +315,21 @@ class ProductService {
     return Product.fromDoc(snapshot.docs.first);
   }
 
+  /// Lấy danh sách sản phẩm theo danh sách ID
+  /// 
+  /// [productIds] - Danh sách ID sản phẩm cần lấy
+  Stream<List<Product>> getProductsByIdsStream(List<String> productIds) {
+    if (productIds.isEmpty) return Stream.value([]);
+
+    // Firestore 'whereIn' supports max 10 values
+    final idsToFetch = productIds.take(10).toList();
+
+    return _productsCol
+        .where(FieldPath.documentId, whereIn: idsToFetch)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(Product.fromDoc).toList());
+  }
+
   /// Lấy danh sách sản phẩm yêu thích (giới hạn 10 ID đầu tiên do Firestore limit)
   /// 
   /// [productIds] - Danh sách ID sản phẩm cần lấy
