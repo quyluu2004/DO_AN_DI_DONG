@@ -5,6 +5,10 @@ import 'package:intl/intl.dart';
 import '../../models/product_model.dart';
 import '../../models/review_model.dart'; // [NEW]
 import '../../services/review_service.dart'; // [NEW]
+import '../../services/product_service.dart'; // [NEW]
+import '../../services/user_service.dart'; // [NEW]
+import '../../services/loyalty_service.dart'; // [NEW]
+import '../../models/user_model.dart'; // [NEW]
 import '../../providers/history_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../theme/app_theme.dart';
@@ -207,6 +211,56 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  // Member Price & Point Info
+                  StreamBuilder<UserModel?>(
+                    stream: UserService.instance.currentUserProfileStream(),
+                    builder: (context, snapshot) {
+                      final user = snapshot.data;
+                      if (user == null) return const SizedBox.shrink();
+
+                      final maxPoints = LoyaltyService.instance.getMaxRedeemablePoints(product.price.toDouble(), user.points);
+                      final discount = LoyaltyService.instance.getPointValue(maxPoints);
+                      final finalPrice = product.price - discount;
+                      
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.stars, color: Colors.amber, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Giá ưu đãi hội viên: đ${NumberFormat('#,###').format(finalPrice)}', 
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 14)
+                                ),
+                              ],
+                            ),
+                            if (maxPoints > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 24),
+                                child: Text(
+                                  'Dùng $maxPoints điểm để giảm ${NumberFormat('#,###').format(discount)}đ',
+                                  style: TextStyle(fontSize: 12, color: Colors.amber[800]),
+                                ),
+                              )
+                            else
+                               const Padding(
+                                padding: EdgeInsets.only(top: 4, left: 24),
+                                child: Text('Bạn chưa có đủ điểm để dùng.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              )
+                          ],
+                        ),
+                      );
+                    }
+                  ),
                   const SizedBox(height: 16),
                   
                   // Description
@@ -265,6 +319,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   // Reviews Section
                   _buildReviewsSection(product),
+                  
+                  const SizedBox(height: 24),
+                  // Recommendations
+                  _buildRecommendations(context),
                   
                   const SizedBox(height: 100), // Space for bottom bar
                 ],
@@ -693,6 +751,98 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           Text('${(percent * 100).toInt()}%', style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecommendations(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Text('Bạn có thể thích', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+        StreamBuilder<List<Product>>(
+          stream: ProductService.instance.getProductsStream(limit: 6, sortBy: 'sales'),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            
+            final products = snapshot.data ?? [];
+            // Remove current product from recommendations
+            final filteredProducts = products.where((p) => p.id != widget.product.id).take(4).toList();
+            
+            return GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.7,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                return GestureDetector(
+                  onTap: () {
+                     Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProductDetailScreen(product: product),
+                        ),
+                      );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                         BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, spreadRadius: 1),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                            child: Image.network(
+                              product.images.first,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_,__,___) => Container(color: Colors.grey[200]),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name, 
+                                maxLines: 2, 
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'đ${NumberFormat('#,###').format(product.price)}', 
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 } // End of State class

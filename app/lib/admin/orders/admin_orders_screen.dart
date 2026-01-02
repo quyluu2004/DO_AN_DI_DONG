@@ -188,7 +188,13 @@ class _OrderCard extends StatelessWidget {
   
   Future<void> _updateStatus(BuildContext context, String orderId, OrderStatus status) async {
     try {
-       await FirebaseFirestore.instance.collection('orders').doc(orderId).update({'status': status.name});
+       if (status == OrderStatus.delivered) {
+         // Use the provider method which handles status update AND points
+         await Provider.of<OrderProvider>(context, listen: false).completeOrder(orderId);
+       } else {
+         // For other statuses, just update firestore directly or add specific methods in provider
+         await FirebaseFirestore.instance.collection('orders').doc(orderId).update({'status': status.name});
+       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     }

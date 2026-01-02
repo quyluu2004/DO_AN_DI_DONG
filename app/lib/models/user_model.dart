@@ -13,6 +13,12 @@ class UserModel {
   final String? fcmToken;
   final List<String> favoriteProductIds;
 
+  final int points;
+  final double totalSpent;
+  final String tier; // member, silver, gold, diamond
+  final DateTime? lastCheckInDate;
+  final int checkInStreak;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -25,6 +31,11 @@ class UserModel {
     this.isVerified = false,
     this.fcmToken,
     this.favoriteProductIds = const [],
+    this.points = 0,
+    this.totalSpent = 0.0,
+    this.tier = 'member',
+    this.lastCheckInDate,
+    this.checkInStreak = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -39,6 +50,11 @@ class UserModel {
       'isVerified': isVerified,
       'fcmToken': fcmToken,
       'favoriteProductIds': favoriteProductIds,
+      'points': points,
+      'totalSpent': totalSpent,
+      'tier': tier,
+      'lastCheckInDate': lastCheckInDate != null ? Timestamp.fromDate(lastCheckInDate!) : null,
+      'checkInStreak': checkInStreak,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -57,6 +73,11 @@ class UserModel {
       isVerified: data['isVerified'] as bool? ?? false,
       fcmToken: data['fcmToken'] as String?,
       favoriteProductIds: List<String>.from(data['favoriteProductIds'] as List<dynamic>? ?? []),
+      points: data['points'] as int? ?? 0,
+      totalSpent: (data['totalSpent'] as num?)?.toDouble() ?? 0.0,
+      tier: data['tier'] as String? ?? 'member',
+      lastCheckInDate: (data['lastCheckInDate'] as Timestamp?)?.toDate(),
+      checkInStreak: data['checkInStreak'] as int? ?? 0,
     );
   }
 }

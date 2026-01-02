@@ -6,6 +6,7 @@ import '../../providers/order_provider.dart'; // [NEW]
 import '../../theme/app_theme.dart';
 import '../product/product_detail_screen.dart'; // Assuming we might want to nav back to product
 import '../../models/product_model.dart'; // For type safety if needed, though we primarily use CartItem
+import '../../services/product_service.dart'; // [NEW]
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderModel order;
@@ -49,7 +50,13 @@ class OrderDetailScreen extends StatelessWidget {
             const SizedBox(height: 10),
 
             // 4. Order Information
+            // 4. Order Information
             _buildOrderInfo(),
+
+            const SizedBox(height: 10),
+
+            // 5. You might like
+            _buildRecommendations(context),
             
             const SizedBox(height: 100), // Space for bottom bar
           ],
@@ -458,6 +465,96 @@ class OrderDetailScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecommendations(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Text('Bạn có thể thích', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+        StreamBuilder<List<Product>>(
+          stream: ProductService.instance.getProductsStream(limit: 6, sortBy: 'sales'),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            
+            final products = snapshot.data ?? [];
+            
+            return GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.7,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return GestureDetector(
+                  onTap: () {
+                     Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProductDetailScreen(product: product),
+                        ),
+                      );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                         BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, spreadRadius: 1),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                            child: Image.network(
+                              product.images.first,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_,__,___) => Container(color: Colors.grey[200]),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name, 
+                                maxLines: 2, 
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'đ${NumberFormat('#,###').format(product.price)}', 
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 }

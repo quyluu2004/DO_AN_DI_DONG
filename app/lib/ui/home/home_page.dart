@@ -115,8 +115,7 @@ class _HomeTab extends StatelessWidget {
                 // 7. Navigation Chips
                 const SliverToBoxAdapter(child: _NavigationChips()),
                 
-                // 7. Navigation Chips
-                const SliverToBoxAdapter(child: _NavigationChips()),
+
 
                 // 8. Promo Banner
                 const SliverToBoxAdapter(child: _PromoBanner()),

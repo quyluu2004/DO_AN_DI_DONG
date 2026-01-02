@@ -16,6 +16,8 @@ import 'history_screen.dart';
 import 'favorite_screen.dart';
 import '../../providers/favorite_provider.dart';
 import '../../providers/history_provider.dart';
+import '../loyalty/loyalty_screen.dart'; // [NEW]
+import '../../services/loyalty_service.dart'; // [NEW]
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -151,20 +153,32 @@ class _ProfileHeader extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                           Icon(Icons.emoji_events, color: Colors.amber, size: 12),
-                           SizedBox(width: 4),
-                           Text('S0 >', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+                    // Dynamic Tier Badge
+                    Builder(
+                      builder: (context) {
+                         final tier = userModel?.tier ?? 'member';
+                         final tierInfo = LoyaltyService.instance.getTierInfo(tier);
+                         
+                         return InkWell(
+                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoyaltyScreen())),
+                           child: Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                             decoration: BoxDecoration(
+                               color: Colors.black,
+                               borderRadius: BorderRadius.circular(12),
+                               gradient: LinearGradient(colors: [Colors.black, tierInfo.color.withOpacity(0.8)]),
+                             ),
+                             child: Row(
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                  Icon(tierInfo.icon, color: Colors.amber, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text('${tierInfo.name} >', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                               ],
+                             ),
+                           ),
+                         );
+                      }
                     )
                   ],
                 ),
@@ -224,17 +238,23 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          _StatItem(value: '9', label: 'Mã giảm giá'),
-          _StatItem(value: '8', label: 'Điểm'),
-          _StatItem(icon: Icons.account_balance_wallet_outlined, label: 'Ví'),
-          _StatItem(icon: Icons.card_giftcard, label: 'Quà tặng'),
-        ],
-      ),
+    return StreamBuilder<UserModel?>(
+      stream: UserService.instance.currentUserProfileStream(),
+      builder: (context, snapshot) {
+        final points = snapshot.data?.points ?? 0;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              const _StatItem(value: '9', label: 'Mã giảm giá'),
+              _StatItem(value: '$points', label: 'Điểm'),
+              const _StatItem(icon: Icons.account_balance_wallet_outlined, label: 'Ví'),
+              const _StatItem(icon: Icons.card_giftcard, label: 'Quà tặng'),
+            ],
+          ),
+        );
+      }
     );
   }
 }
@@ -390,7 +410,11 @@ class _ServicesSection extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           const _ServiceItem(icon: Icons.headset_mic_outlined, label: 'CSKH'),
-          const _ServiceItem(icon: Icons.calendar_today_outlined, label: 'Điểm danh'),
+          _ServiceItem(
+            icon: Icons.calendar_today_outlined, 
+            label: 'Điểm danh',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoyaltyScreen())),
+          ),
           _ServiceItem(
             icon: Icons.post_add_outlined, 
             label: 'Bài đăng',

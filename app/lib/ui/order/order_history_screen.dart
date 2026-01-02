@@ -24,12 +24,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this, initialIndex: widget.initialIndex);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = AuthService.instance.currentUser;
-      if (user != null) {
-        context.read<OrderProvider>().fetchOrders(user.uid);
-      }
-    });
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {});
@@ -56,6 +50,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return const Scaffold(body: Center(child: Text('Vui lòng đăng nhập')));
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_getTitleForIndex(_tabController.index), style: const TextStyle(color: Colors.black)),
@@ -78,37 +75,31 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> with SingleTick
           ],
         ),
       ),
-      body: Consumer<OrderProvider>(
-        builder: (context, orderProvider, child) {
-          if (orderProvider.isLoading) {
+      body: StreamBuilder<List<OrderModel>>(
+        stream: context.read<OrderProvider>().getMyOrdersStream(user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (orderProvider.error != null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SelectableText(
-                  'Lỗi: ${orderProvider.error}',
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
+          if (snapshot.hasError) {
+             return Center(child: Text('Lỗi: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
           }
 
-          if (orderProvider.orders.isEmpty) {
+          final orders = snapshot.data ?? [];
+
+          if (orders.isEmpty) {
             return const Center(child: Text('Chưa có đơn hàng nào'));
           }
 
           return TabBarView(
             controller: _tabController,
             children: [
-              _OrderList(orders: orderProvider.orders),
-              _OrderList(orders: orderProvider.orders.where((o) => o.status == OrderStatus.pending).toList()),
-              _OrderList(orders: orderProvider.orders.where((o) => o.status == OrderStatus.shipping).toList()),
-              _OrderList(orders: orderProvider.orders.where((o) => o.status == OrderStatus.delivered).toList()),
-              _OrderList(orders: orderProvider.orders.where((o) => o.status == OrderStatus.cancelled).toList()),
+              _OrderList(orders: orders),
+              _OrderList(orders: orders.where((o) => o.status == OrderStatus.pending).toList()),
+              _OrderList(orders: orders.where((o) => o.status == OrderStatus.shipping).toList()),
+              _OrderList(orders: orders.where((o) => o.status == OrderStatus.delivered).toList()),
+              _OrderList(orders: orders.where((o) => o.status == OrderStatus.cancelled).toList()),
             ],
           );
         },

@@ -30,6 +30,8 @@ class OrderModel {
   final DateTime createdAt;
   final double discountAmount;
   final String? couponCode;
+  final int pointsUsed; // [NEW]
+  final double discountFromPoints; // [NEW]
 
   OrderModel({
     required this.id,
@@ -42,6 +44,8 @@ class OrderModel {
     required this.createdAt,
     this.discountAmount = 0,
     this.couponCode,
+    this.pointsUsed = 0,
+    this.discountFromPoints = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -56,6 +60,8 @@ class OrderModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'discountAmount': discountAmount,
       'couponCode': couponCode,
+      'pointsUsed': pointsUsed,
+      'discountFromPoints': discountFromPoints,
     };
   }
 
@@ -76,6 +82,8 @@ class OrderModel {
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       discountAmount: (map['discountAmount'] ?? 0).toDouble(),
       couponCode: map['couponCode'],
+      pointsUsed: map['pointsUsed'] as int? ?? 0,
+      discountFromPoints: (map['discountFromPoints'] ?? 0).toDouble(),
     );
   }
 }

@@ -11,6 +11,9 @@ import '../../models/coupon_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/coupon_service.dart';
 import '../address/address_list_screen.dart';
+import '../../services/user_service.dart'; // [NEW]
+import '../../services/loyalty_service.dart'; // [NEW]
+import '../../models/user_model.dart'; // [NEW]
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -26,6 +29,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   CouponModel? _appliedCoupon;
   String? _couponError;
   bool _isValidatingCoupon = false;
+  
+  // Point Redemption
+  bool _isUsingPoints = false;
+  int _userPoints = 0;
+  int _redeemablePoints = 0;
+  double _discountFromPoints = 0;
 
   String get _deliveryDateEstimate {
     final now = DateTime.now();
@@ -39,8 +48,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.initState();
     final userId = AuthService.instance.currentUser?.uid;
     if (userId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         context.read<AddressProvider>().fetchAddresses(userId);
+        
+        // Fetch User Points
+        final user = await UserService.instance.getCurrentUserProfile();
+        if (user != null) {
+           setState(() => _userPoints = user.points);
+        }
       });
     }
   }
@@ -109,11 +124,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     double shippingDiscount = 12000; // Freeship
     double shippingGuaranteeFee = 0;
     double couponDiscount = _appliedCoupon?.discountAmount ?? 0;
+
+    // Points
+    _redeemablePoints = LoyaltyService.instance.getMaxRedeemablePoints(subtotal, _userPoints);
+    final potentialPointsDiscount = LoyaltyService.instance.getPointValue(_redeemablePoints);
+    _discountFromPoints = _isUsingPoints ? potentialPointsDiscount : 0.0;
     
-    double grandTotal = subtotal + (shippingFee - shippingDiscount) + shippingGuaranteeFee - couponDiscount;
+    double grandTotal = subtotal + (shippingFee - shippingDiscount) + shippingGuaranteeFee - couponDiscount - _discountFromPoints;
     if (grandTotal < 0) grandTotal = 0;
 
-    double savedAmount = shippingDiscount + couponDiscount;
+    double savedAmount = shippingDiscount + couponDiscount + _discountFromPoints;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -457,6 +477,50 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                         const SizedBox(height: 12),
 
+                        // Point Redemption Section
+                        if (_userPoints > 0)
+                          Container(
+                            color: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Column(
+                              children: [
+                                SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Row(
+                                    children: [
+                                      const Icon(Icons.stars, color: Colors.amber),
+                                      const SizedBox(width: 8),
+                                      Text('Dùng $_redeemablePoints điểm', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                  subtitle: Text(
+                                    'Giảm ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(LoyaltyService.instance.getPointValue(_redeemablePoints))}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                  value: _isUsingPoints,
+                                  activeColor: Colors.amber,
+                                  onChanged: (value) {
+                                    setState(() => _isUsingPoints = value);
+                                  },
+                                ),
+                                if (_isUsingPoints)
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.info_outline, size: 16, color: Colors.amber),
+                                        const SizedBox(width: 8),
+                                        Expanded(child: Text('Đã dùng $_redeemablePoints điểm để giảm giá.', style: TextStyle(fontSize: 12, color: Colors.amber[800]))),
+                                      ],
+                                    ),
+                                  )
+                              ],
+                            ),
+                          ),
+
+                        const SizedBox(height: 12),
+
                         // Summary
                         Container(
                           color: Colors.white,
@@ -478,6 +542,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   label: 'Voucher giảm giá:', 
                                   value: '-${currencyFormat.format(couponDiscount)}',
                                   valueColor: Colors.red,
+                                ),
+                              ],
+                              if (_isUsingPoints && _discountFromPoints > 0) ...[
+                                const SizedBox(height: 8),
+                                _SummaryRow(
+                                  label: 'Dùng điểm ($_redeemablePoints):', 
+                                  value: '-${currencyFormat.format(_discountFromPoints)}',
+                                  valueColor: Colors.amber[800],
                                 ),
                               ],
                               const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
@@ -646,14 +718,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // Better to store 'grandTotal' in state or recalc. For now, let's recalculate quickly or check how to access.
     // Actually, accessing cart state again is safer.
     
-    // ... Re-calculating grand total locally for Order Model ...
-    double subtotal = cartProvider.totalAmount;
-    double shippingFee = 12000;
-    double shippingDiscount = 12000;
-    double couponDiscount = _appliedCoupon?.discountAmount ?? 0;
-    double total = subtotal + (shippingFee - shippingDiscount) - couponDiscount;
-    if (total < 0) total = 0;
+    // Use read instead of watch in callbacks
+    final cart = context.read<CartProvider>();
+    final cartItems = cart.cart.items;
+    final subtotal = cart.totalAmount;
+    final shippingFee = _isShippingGuarantee ? 15000.0 : 0.0;
+    final couponDiscount = _appliedCoupon?.discountAmount ?? 0.0;
+    
+    // Calculate redeemable points
+    _redeemablePoints = LoyaltyService.instance.getMaxRedeemablePoints(subtotal, _userPoints);
+    final potentialPointsDiscount = LoyaltyService.instance.getPointValue(_redeemablePoints);
+    
+    // Update discount based on toggle
+    _discountFromPoints = _isUsingPoints ? potentialPointsDiscount : 0.0;
 
+    final grandTotal = subtotal + shippingFee - couponDiscount - _discountFromPoints;
+    final savedAmount = couponDiscount + _discountFromPoints;
+    
     final user = AuthService.instance.currentUser;
     final userId = user?.uid ?? 'guest_123';
 
@@ -661,13 +742,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       userId: userId,
       items: cartProvider.cart.items,
-      totalAmount: total,
+      totalAmount: grandTotal, // Use grandTotal calculated here
       shippingAddress: address,
       status: OrderStatus.pending,
       paymentMethod: _paymentMethod,
       createdAt: DateTime.now(),
-      discountAmount: _appliedCoupon?.discountAmount ?? 0,
+      discountAmount: (_appliedCoupon?.discountAmount ?? 0) + _discountFromPoints,
       couponCode: _appliedCoupon?.code,
+      pointsUsed: _isUsingPoints ? _redeemablePoints : 0,
+      discountFromPoints: _discountFromPoints,
     );
 
     try {
@@ -694,7 +777,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+        String message = 'Lỗi: $e';
+        if (e.toString().contains("Dart exception thrown")) {
+          message = "Lỗi kết nối hoặc dữ liệu không hợp lệ. Vui lòng thử lại.";
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     }
   }
