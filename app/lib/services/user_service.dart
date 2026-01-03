@@ -282,6 +282,25 @@ class UserService {
       rethrow;
     }
   }
+
+  /// Thêm danh sách coupon vào ví của user (Sub-collection 'my_coupons')
+  Future<void> addCouponsToUserWallet(String uid, List<String> couponIds) async {
+    if (couponIds.isEmpty) return;
+
+    final batch = _db.batch();
+    final userCouponsRef = _usersCol.doc(uid).collection('my_coupons');
+
+    for (final couponId in couponIds) {
+      // Tạo doc mới cho mỗi coupon, có thể lưu thêm status = 'unused'
+      final docRef = userCouponsRef.doc(); 
+      batch.set(docRef, {
+        'couponId': couponId,
+        'receivedAt': FieldValue.serverTimestamp(),
+        'status': 'unused',
+        'isGift': true,
+      });
+    }
+
+    await batch.commit();
+  }
 }
-
-

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/ui_config_model.dart';
 import '../../services/ui_service.dart';
 import 'package:intl/intl.dart';
+import '../../services/coupon_service.dart';
+import '../../models/coupon_model.dart';
 
 class FlashSaleManager extends StatefulWidget {
   final FlashSaleConfig initialConfig;
@@ -23,6 +25,8 @@ class _FlashSaleManagerState extends State<FlashSaleManager> {
   final TextEditingController _limitController = TextEditingController(); // <--- Controller cho số lượng
   final TextEditingController _durationController = TextEditingController();
   bool _useDuration = false;
+  List<String> _selectedGiftCouponIds = [];
+  List<CouponModel> _availableCoupons = [];
 
   @override
   void initState() {
@@ -36,6 +40,13 @@ class _FlashSaleManagerState extends State<FlashSaleManager> {
     _codeController.text = _config.code ?? '';
     _discountController.text = _config.discountValue?.toString() ?? '';
     _limitController.text = _config.limit.toString(); // <--- Load số lượng cũ
+    _selectedGiftCouponIds = List.from(_config.giftCouponIds);
+    _loadCoupons();
+  }
+
+  Future<void> _loadCoupons() async {
+    _availableCoupons = await CouponService.instance.getAllCoupons();
+    if (mounted) setState(() {});
   }
 
   Future<void> _pickDateTime() async {
@@ -85,6 +96,7 @@ class _FlashSaleManagerState extends State<FlashSaleManager> {
     _config.code = _codeController.text;
     _config.discountValue = double.tryParse(_discountController.text) ?? 0;
     _config.limit = int.tryParse(_limitController.text) ?? 0; // <--- Lưu số lượng
+    _config.giftCouponIds = _selectedGiftCouponIds;
 
     setState(() => _isLoading = true);
     await UIService.instance.updateFlashSale(_config);
@@ -234,6 +246,40 @@ class _FlashSaleManagerState extends State<FlashSaleManager> {
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 20),
+                const Text("🎁 Quà tặng kèm (Chọn voucher):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _availableCoupons.isEmpty 
+                    ? const Center(child: Text("Đang tải danh sách voucher..."))
+                    : ListView.builder(
+                        itemCount: _availableCoupons.length,
+                        itemBuilder: (context, index) {
+                          final coupon = _availableCoupons[index];
+                          final isSelected = _selectedGiftCouponIds.contains(coupon.id);
+                          return CheckboxListTile(
+                            title: Text("${coupon.code} - ${coupon.title}"),
+                            subtitle: Text(coupon.discountType == 'percent' ? "Giảm ${coupon.discountValue}%" : "Giảm ${coupon.discountValue}đ"),
+                            value: isSelected,
+                            onChanged: (val) {
+                              setState(() {
+                                if (val == true) {
+                                  _selectedGiftCouponIds.add(coupon.id);
+                                } else {
+                                  _selectedGiftCouponIds.remove(coupon.id);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
                 ),
                 
                 // Hiển thị thống kê & Danh sách

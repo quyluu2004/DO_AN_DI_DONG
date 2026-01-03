@@ -23,9 +23,31 @@ class CartProvider extends ChangeNotifier {
   String? _couponError;
   String? get couponError => _couponError;
 
-  // Tính số tiền được giảm (Logic cốt lõi - Đã nâng cấp)
+  // Thêm biến quản lý phí ship
+  double _shippingFee = 12000; // Phí ship mặc định (hoặc lấy từ API)
+  double get shippingFee => _shippingFee;
+
+  // [MỚI] Tính tiền giảm phí vận chuyển (Free Ship)
+  double get shippingDiscountAmount {
+    if (_appliedCoupon == null) return 0;
+    if (_appliedCoupon!.type != CouponType.freeShip) return 0;
+
+    double originalShippingFee = _shippingFee; 
+
+    // Nếu coupon là Free Ship, giảm tối đa maxShippingDiscount
+    if (_appliedCoupon!.maxShippingDiscount > 0) {
+      return originalShippingFee <= _appliedCoupon!.maxShippingDiscount 
+          ? originalShippingFee 
+          : _appliedCoupon!.maxShippingDiscount;
+    }
+    
+    return originalShippingFee; // Nếu không set max, free 100%
+  }
+
+  // [CẬP NHẬT] Tính số tiền được giảm giá ĐƠN HÀNG
   double get discountAmount {
     if (_appliedCoupon == null) return 0;
+    if (_appliedCoupon!.type == CouponType.freeShip) return 0; // Nếu là mã FreeShip thì không giảm giá đơn hàng
 
     double amountEligibleForDiscount = 0.0;
     
@@ -87,7 +109,13 @@ class CartProvider extends ChangeNotifier {
 
   // Tổng tiền cuối cùng khách phải trả
   double get totalAmount {
-    double total = subtotal - discountAmount;
+    double total = subtotal - discountAmount; 
+    return total > 0 ? total : 0;
+  }
+
+  // [MỚI] Tổng thanh toán cuối cùng (Bao gồm ship và giảm giá ship)
+  double get finalTotalAmount {
+    double total = subtotal - discountAmount + (_shippingFee - shippingDiscountAmount);
     return total > 0 ? total : 0;
   }
 

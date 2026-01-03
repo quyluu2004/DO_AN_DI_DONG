@@ -93,6 +93,18 @@ class UIService {
         currentConfig.usageHistory.add({'uid': uid, 'name': userName, 'time': DateTime.now().millisecondsSinceEpoch});
 
         await updateFlashSale(currentConfig);
+
+        // Ghi vào collection riêng để tracking (theo yêu cầu mới)
+        try {
+          await _db.collection('flash_sale_usage').add({
+            'userId': uid,
+            'userName': userName,
+            'couponCode': appliedCode,
+            'usedAt': FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          print("Lỗi tracking Flash Sale: $e");
+        }
       }
     }
   }

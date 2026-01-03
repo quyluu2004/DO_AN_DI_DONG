@@ -391,4 +391,43 @@ class ProductService {
       },
     });
   }
+
+  /// Lấy danh sách sản phẩm đang giảm giá (cho màn hình Voucher Detail)
+  Future<List<Product>> getDiscountedProducts() async {
+    try {
+      // Lấy 10 sản phẩm có discountPrice > 0
+      final snapshot = await _productsCol
+          .where('discountPrice', isGreaterThan: 0)
+          .limit(10)
+          .get();
+
+      return snapshot.docs.map(Product.fromDoc).toList();
+    } catch (e) {
+      // ignore: avoid_print
+      print("Lỗi lấy sản phẩm gợi ý: $e");
+      return [];
+    }
+  }
+
+  /// Lấy danh sách sản phẩm áp dụng cho coupon
+  /// 
+  /// [targetCategories] - Danh sách danh mục áp dụng của coupon
+  Future<List<Product>> getProductsForCoupon(List<String> targetCategories) async {
+    try {
+      Query<Map<String, dynamic>> query = _productsCol.where('status', isEqualTo: ProductStatus.active.value);
+
+      // Nếu coupon có giới hạn danh mục
+      if (targetCategories.isNotEmpty) {
+        // Firestore whereIn giới hạn 10 phần tử
+        final categoriesToFetch = targetCategories.take(10).toList();
+        query = query.where('category', whereIn: categoriesToFetch);
+      }
+      
+      final snapshot = await query.limit(20).get();
+      return snapshot.docs.map(Product.fromDoc).toList();
+    } catch (e) {
+      print("Lỗi lấy sản phẩm cho coupon: $e");
+      return [];
+    }
+  }
 }

@@ -84,6 +84,7 @@ class FlashSaleConfig {
   int limit;
   List<String> usedUserIds;
   List<Map<String, dynamic>> usageHistory;
+  List<String> giftCouponIds; // Thêm trường này
 
   FlashSaleConfig({
     this.title = 'Flash Sale',
@@ -97,6 +98,7 @@ class FlashSaleConfig {
     this.limit = 0,
     this.usedUserIds = const [],
     this.usageHistory = const [],
+    this.giftCouponIds = const [], // Khởi tạo mặc định
   });
 
   Map<String, dynamic> toMap() {
@@ -112,6 +114,7 @@ class FlashSaleConfig {
       'limit': limit,
       'usedUserIds': usedUserIds,
       'usageHistory': usageHistory,
+      'giftCouponIds': giftCouponIds, // Lưu vào map
     };
   }
 
@@ -132,6 +135,9 @@ class FlashSaleConfig {
       usageHistory: map['usageHistory'] != null 
           ? List<Map<String, dynamic>>.from(map['usageHistory']) 
           : [],
+      giftCouponIds: map['giftCouponIds'] != null
+          ? List<String>.from(map['giftCouponIds'])
+          : [], // Đọc từ map
     );
   }
 }

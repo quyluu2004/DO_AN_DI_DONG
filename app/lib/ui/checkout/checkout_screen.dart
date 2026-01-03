@@ -11,6 +11,9 @@ import '../../models/coupon_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/ui_service.dart';
 import '../address/address_list_screen.dart';
+import '../../services/coupon_service.dart';
+import '../../services/user_service.dart';
+import '../components/gift_received_dialog.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -104,15 +107,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     
     // [SỬA LỖI 3] Lấy số liệu trực tiếp từ Provider
     double subtotal = cart.subtotal; // Tổng tiền hàng chưa giảm
-    double shippingFee = 12000;
-    double shippingDiscount = 12000; // Freeship
+    double shippingFee = cart.shippingFee;
+    double shippingDiscount = cart.shippingDiscountAmount; // [MỚI] Lấy từ Provider
     
     // Lấy tiền giảm từ Provider (đã tính toán chính xác theo danh mục)
     double couponDiscount = cart.discountAmount; 
     
     // Tính tổng cuối cùng
-    double grandTotal = subtotal + (shippingFee - shippingDiscount) - couponDiscount;
-    if (grandTotal < 0) grandTotal = 0;
+    double grandTotal = cart.finalTotalAmount;
 
     double savedAmount = shippingDiscount + couponDiscount;
 
@@ -311,7 +313,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                          const SizedBox(width: 4),
                                          Expanded(
                                            child: Text(
-                                             'Mã: ${cart.appliedCoupon!.code} (-${currencyFormat.format(cart.discountAmount)})',
+                                             'Mã: ${cart.appliedCoupon!.code} ${cart.discountAmount > 0 ? "(-${currencyFormat.format(cart.discountAmount)})" : "(FreeShip)"}',
                                              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                                            ),
                                          ),
@@ -340,11 +342,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               _SummaryRow(
                                 label: 'Phí vận chuyển:', 
                                 value: currencyFormat.format(shippingFee),
-                                valueColor: Colors.grey,
-                                isStrikethrough: true,
-                                suffix: const Text('Miễn phí', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                               ),
-                              if (cart.appliedCoupon != null) ...[
+                              // [CẬP NHẬT] Hiển thị dòng giảm giá ship riêng biệt
+                              if (shippingDiscount > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text("Ưu đãi phí vận chuyển:", style: TextStyle(color: Colors.teal, fontSize: 14)),
+                                      Text("-${currencyFormat.format(shippingDiscount)}", 
+                                           style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 14)),
+                                    ],
+                                  ),
+                                ),
+
+                              if (couponDiscount > 0) ...[
                                 const SizedBox(height: 8),
                                 _SummaryRow(
                                   label: 'Voucher giảm giá:', 
@@ -460,6 +473,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // cartProvider.removeSelectedItems(); // Cần viết hàm này trong Provider sau
       cartProvider.clearCart(); // Tạm thời clear hết để demo
       
+      // [MỚI] Xử lý Logic Tặng Quà (Gift Coupons)
+      try {
+        final homeConfig = await UIService.instance.getHomeConfig();
+        final flashSale = homeConfig.flashSale;
+        
+        if (flashSale.giftCouponIds.isNotEmpty) {
+          // Thêm coupon vào ví user
+          await UserService.instance.addCouponsToUserWallet(userId, flashSale.giftCouponIds);
+          
+          // Lấy thông tin coupon để hiển thị popup
+          final giftCoupons = await CouponService.instance.getCouponsByIds(flashSale.giftCouponIds);
+          
+          if (mounted && giftCoupons.isNotEmpty) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => GiftReceivedDialog(coupons: giftCoupons),
+            );
+            return; // Kết thúc hàm tại đây, không hiện dialog success mặc định bên dưới
+          }
+        }
+      } catch (e) {
+        debugPrint("Lỗi xử lý quà tặng: $e");
+        // Nếu lỗi phần quà tặng, vẫn hiện thông báo thành công bình thường
+      }
+
       if (mounted) {
         showDialog(
           context: context,

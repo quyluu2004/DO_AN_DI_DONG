@@ -16,6 +16,7 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
   final _valueController = TextEditingController();
   final _minOrderController = TextEditingController();
   final _maxDiscountController = TextEditingController(); // Dùng cho %
+  final _maxShippingDiscountController = TextEditingController(); // Dùng cho FreeShip
 
   // Biến cho Flash Sale
   bool isFlashSale = false;
@@ -24,6 +25,7 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
   final TextEditingController _minuteController = TextEditingController(text: "0");
   final TextEditingController _secondController = TextEditingController(text: "0");
 
+  CouponType _couponType = CouponType.orderDiscount; // Mặc định là giảm giá đơn
   String _discountType = 'fixed'; // 'fixed' hoặc 'percent'
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(Duration(days: 7));
@@ -35,11 +37,15 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
   Future<void> _saveCoupon() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Nếu là FreeShip thì value có thể là 0 hoặc max shipping
+    double discountValue = 0;
+    if (_couponType == CouponType.orderDiscount) {
     // 1. Xử lý số liệu an toàn (Hỗ trợ nhập dấu phẩy thay vì dấu chấm)
-    double? discountValue = double.tryParse(_valueController.text.replaceAll(',', '.'));
-    if (discountValue == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Giá trị giảm giá không hợp lệ (Vui lòng kiểm tra số)')));
-      return;
+      discountValue = double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0;
+      if (discountValue == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập giá trị giảm')));
+        return;
+      }
     }
 
     double? maxDiscount;
@@ -49,6 +55,11 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Giảm tối đa không hợp lệ')));
         return;
       }
+    }
+
+    double maxShippingDiscount = 0;
+    if (_couponType == CouponType.freeShip && _maxShippingDiscountController.text.isNotEmpty) {
+      maxShippingDiscount = double.tryParse(_maxShippingDiscountController.text.replaceAll(',', '.')) ?? 0;
     }
 
     double minOrder = 0;
@@ -89,9 +100,11 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
         id: '', // Firestore tự sinh ID
         code: _codeController.text,
         title: _titleController.text,
+        type: _couponType,
         discountType: _discountType,
         discountValue: discountValue,
         maxDiscount: maxDiscount,
+        maxShippingDiscount: maxShippingDiscount,
         minOrderValue: minOrder,
         targetCategories: _selectedCategories,
         isActive: true,
@@ -137,6 +150,22 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
               ),
               SizedBox(height: 20),
               
+              // [CẬP NHẬT] Dùng Dropdown thay cho Radio theo yêu cầu
+              DropdownButtonFormField<CouponType>(
+                value: _couponType,
+                decoration: const InputDecoration(
+                  labelText: "Loại Voucher",
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: CouponType.orderDiscount, child: Text("Giảm giá đơn hàng")),
+                  DropdownMenuItem(value: CouponType.freeShip, child: Text("Miễn phí vận chuyển (FreeShip)")),
+                ],
+                onChanged: (val) => setState(() => _couponType = val!),
+              ),
+              const SizedBox(height: 10),
+
+              if (_couponType == CouponType.orderDiscount) ...[
               Text("Loại giảm giá:", style: TextStyle(fontWeight: FontWeight.bold)),
               Row(
                 children: [
@@ -183,6 +212,19 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
                   ),
                 ],
               ),
+              ] else ...[
+                // UI cho Free Ship
+                TextFormField(
+                  controller: _maxShippingDiscountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Giảm tiền Ship tối đa (VD: 30000)',
+                    helperText: 'Nhập 0 nếu miễn phí 100% không giới hạn',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+
               SizedBox(height: 10),
               TextFormField(
                 controller: _minOrderController,
