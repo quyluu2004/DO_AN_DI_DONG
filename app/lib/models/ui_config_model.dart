@@ -77,12 +77,28 @@ class FlashSaleConfig {
   DateTime? endTime;
   String type; // 'manual', 'auto'
   List<String> productIds;
+  String? code;
+  double? discountValue;
+  String discountType;
+  bool isActive;
+  int limit;
+  List<String> usedUserIds;
+  List<Map<String, dynamic>> usageHistory;
+  List<String> giftCouponIds; // Thêm trường này
 
   FlashSaleConfig({
     this.title = 'Flash Sale',
     this.endTime,
     this.type = 'auto',
     this.productIds = const [],
+    this.code,
+    this.discountValue,
+    this.discountType = 'percent',
+    this.isActive = false,
+    this.limit = 0,
+    this.usedUserIds = const [],
+    this.usageHistory = const [],
+    this.giftCouponIds = const [], // Khởi tạo mặc định
   });
 
   Map<String, dynamic> toMap() {
@@ -91,6 +107,14 @@ class FlashSaleConfig {
       'endTime': endTime != null ? Timestamp.fromDate(endTime!) : null,
       'type': type,
       'productIds': productIds,
+      'code': code,
+      'discountValue': discountValue,
+      'discountType': discountType,
+      'isActive': isActive,
+      'limit': limit,
+      'usedUserIds': usedUserIds,
+      'usageHistory': usageHistory,
+      'giftCouponIds': giftCouponIds, // Lưu vào map
     };
   }
 
@@ -100,6 +124,20 @@ class FlashSaleConfig {
       endTime: (map['endTime'] as Timestamp?)?.toDate(),
       type: map['type'] as String? ?? 'auto',
       productIds: List<String>.from(map['productIds'] as List<dynamic>? ?? []),
+      code: map['code'] as String?,
+      discountValue: (map['discountValue'] as num?)?.toDouble(),
+      discountType: map['discountType'] as String? ?? 'percent',
+      isActive: map['isActive'] as bool? ?? false,
+      limit: map['limit'] as int? ?? 0,
+      usedUserIds: map['usedUserIds'] != null 
+          ? List<String>.from(map['usedUserIds']) 
+          : [],
+      usageHistory: map['usageHistory'] != null 
+          ? List<Map<String, dynamic>>.from(map['usageHistory']) 
+          : [],
+      giftCouponIds: map['giftCouponIds'] != null
+          ? List<String>.from(map['giftCouponIds'])
+          : [], // Đọc từ map
     );
   }
 }

@@ -106,6 +106,13 @@ class _AdminCouponScreenState extends State<AdminCouponScreen> {
                           padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
                           child: Text("HẾT HẠN", style: TextStyle(color: Colors.white, fontSize: 10)),
+                        ),
+                      if (coupon.isFlashSale && !isExpired)
+                        Container(
+                          margin: EdgeInsets.only(left: 10),
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(4)),
+                          child: Row(children: [Icon(Icons.flash_on, size: 10, color: Colors.white), Text("FLASH", style: TextStyle(color: Colors.white, fontSize: 10))]),
                         )
                     ],
                   ),
@@ -138,13 +145,8 @@ class _AdminCouponScreenState extends State<AdminCouponScreen> {
                         value: coupon.isActive,
                         activeColor: Colors.green,
                         onChanged: (val) {
-                          // Gọi service update status
-                          // CouponService.instance.updateCouponStatus(coupon.id, val);
-                          // Code mẫu nếu service chưa có hàm update status riêng:
-                          FirebaseFirestore.instance
-                              .collection('coupons')
-                              .doc(coupon.id)
-                              .update({'isActive': val});
+                          // Gọi service update status (đã có trong CouponService mới tạo)
+                          CouponService.instance.updateCouponStatus(coupon.id, val);
                         },
                       ),
                       IconButton(
@@ -173,9 +175,7 @@ class _AdminCouponScreenState extends State<AdminCouponScreen> {
           TextButton(
             onPressed: () async {
                // Gọi đúng hàm delete trong service
-               // await CouponService.instance.deleteCoupon(id);
-               // Code mẫu trực tiếp:
-               await FirebaseFirestore.instance.collection('coupons').doc(id).delete();
+               await CouponService.instance.deleteCoupon(id);
                Navigator.pop(context);
             },
             child: const Text('Xóa', style: TextStyle(color: Colors.red)),

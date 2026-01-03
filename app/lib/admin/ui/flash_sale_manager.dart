@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/ui_config_model.dart';
 import '../../services/ui_service.dart';
 import 'package:intl/intl.dart';
+import '../../services/coupon_service.dart';
+import '../../models/coupon_model.dart';
 
 class FlashSaleManager extends StatefulWidget {
   final FlashSaleConfig initialConfig;
@@ -15,15 +17,36 @@ class FlashSaleManager extends StatefulWidget {
 class _FlashSaleManagerState extends State<FlashSaleManager> {
   late FlashSaleConfig _config;
   bool _isLoading = false;
+
+  // Khai báo các Controller
   final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _codeController = TextEditingController();
+  final TextEditingController _discountController = TextEditingController();
+  final TextEditingController _limitController = TextEditingController(); // <--- Controller cho số lượng
+  final TextEditingController _durationController = TextEditingController();
+  bool _useDuration = false;
+  List<String> _selectedGiftCouponIds = [];
+  List<CouponModel> _availableCoupons = [];
 
   @override
   void initState() {
     super.initState();
     _config = FlashSaleConfig.fromMap(widget.initialConfig.toMap());
+
+    // Load dữ liệu cũ lên giao diện
     if (_config.endTime != null) {
       _dateController.text = DateFormat('yyyy-MM-dd HH:mm').format(_config.endTime!);
     }
+    _codeController.text = _config.code ?? '';
+    _discountController.text = _config.discountValue?.toString() ?? '';
+    _limitController.text = _config.limit.toString(); // <--- Load số lượng cũ
+    _selectedGiftCouponIds = List.from(_config.giftCouponIds);
+    _loadCoupons();
+  }
+
+  Future<void> _loadCoupons() async {
+    _availableCoupons = await CouponService.instance.getAllCoupons();
+    if (mounted) setState(() {});
   }
 
   Future<void> _pickDateTime() async {
@@ -50,14 +73,77 @@ class _FlashSaleManagerState extends State<FlashSaleManager> {
   }
 
   Future<void> _save() async {
+    // 1. Xử lý nhập phút nhanh
+    if (_useDuration && _durationController.text.isNotEmpty) {
+      int minutes = int.tryParse(_durationController.text) ?? 0;
+      if (minutes > 0) {
+        _config.endTime = DateTime.now().add(Duration(minutes: minutes));
+        _dateController.text = DateFormat('yyyy-MM-dd HH:mm').format(_config.endTime!);
+      }
+    }
+
+    // 2. Validate thời gian
+    if (_config.endTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn thời gian kết thúc!')));
+      return;
+    }
+    if (_config.endTime!.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lỗi: Thời gian phải ở tương lai!')));
+      return;
+    }
+
+    // 3. Cập nhật Model từ Controller
+    _config.code = _codeController.text;
+    _config.discountValue = double.tryParse(_discountController.text) ?? 0;
+    _config.limit = int.tryParse(_limitController.text) ?? 0; // <--- Lưu số lượng
+    _config.giftCouponIds = _selectedGiftCouponIds;
+
     setState(() => _isLoading = true);
     await UIService.instance.updateFlashSale(_config);
     setState(() => _isLoading = false);
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã lưu Flash Sale!')));
+
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã lưu cấu hình Flash Sale!')));
+  }
+
+  // Hàm hiển thị danh sách người dùng
+  void _showUserList() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Danh sách đã dùng (${_config.usedUserIds.length}/${_config.limit})"),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: _config.usageHistory.isEmpty
+              ? const Center(child: Text("Chưa có ai sử dụng mã này"))
+              : ListView.separated(
+                  itemCount: _config.usageHistory.length,
+                  separatorBuilder: (_, __) => const Divider(),
+                  itemBuilder: (ctx, index) {
+                    final item = _config.usageHistory[index];
+                    final date = DateTime.fromMillisecondsSinceEpoch(item['time']);
+                    return ListTile(
+                      leading: CircleAvatar(child: Text("${index + 1}")),
+                      title: Text(item['name'] ?? "Không có tên", style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text("ID: ${item['uid']}\nThời gian: ${DateFormat('HH:mm dd/MM').format(date)}"),
+                      isThreeLine: true,
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Đóng"))
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Tính toán thống kê
+    int used = _config.usedUserIds.length;
+    int limit = int.tryParse(_limitController.text) ?? 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -67,6 +153,7 @@ class _FlashSaleManagerState extends State<FlashSaleManager> {
             const Text('Flash Sale Block', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ElevatedButton.icon(
               onPressed: _isLoading ? null : _save,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
               icon: const Icon(Icons.save),
               label: const Text('Lưu thay đổi'),
             ),
@@ -79,35 +166,158 @@ class _FlashSaleManagerState extends State<FlashSaleManager> {
             child: Column(
               children: [
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Tiêu đề (VD: Flash Sale, Giờ vàng)'),
+                  decoration: const InputDecoration(labelText: 'Tiêu đề (VD: Flash Sale)'),
                   controller: TextEditingController(text: _config.title)..selection = TextSelection.collapsed(offset: _config.title.length),
                   onChanged: (v) => _config.title = v,
                 ),
                 const SizedBox(height: 12),
+
+                // Chọn ngày giờ
                 TextField(
                   controller: _dateController,
                   readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Thời gian kết thúc',
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Thời gian kết thúc', suffixIcon: Icon(Icons.calendar_today)),
                   onTap: _pickDateTime,
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _config.type,
-                  decoration: const InputDecoration(labelText: 'Nguồn sản phẩm'),
-                  items: const [
-                    DropdownMenuItem(value: 'auto', child: Text('Tự động (Top giảm giá)')),
-                    DropdownMenuItem(value: 'manual', child: Text('Thủ công (Chọn ID)')),
-                  ],
-                  onChanged: (v) => setState(() => _config.type = v ?? 'auto'),
+
+                // Checkbox nhập phút nhanh
+                CheckboxListTile(
+                  title: const Text("Cài đặt nhanh theo thời lượng (phút)"),
+                  value: _useDuration,
+                  onChanged: (val) => setState(() => _useDuration = val ?? false),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
                 ),
-                if (_config.type == 'manual') ...[
-                   const SizedBox(height: 12),
-                   const Text('Chức năng chọn sản phẩm thủ công đang được phát triển...', style: TextStyle(color: Colors.grey)),
-                   // TODO: Add Product Selector widget here
-                ]
+                if (_useDuration)
+                  TextField(
+                    controller: _durationController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Nhập số phút (VD: 30)', border: OutlineInputBorder()),
+                  ),
+
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 12),
+
+                // --- HÀNG NHẬP LIỆU QUAN TRỌNG ---
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Ô Mã Code
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _codeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Mã Code',
+                          border: OutlineInputBorder(),
+                          hintText: 'VD: FLASH50'
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    
+                    // Ô Giảm giá
+                    Expanded(
+                      flex: 1,
+                      child: TextField(
+                        controller: _discountController,
+                        decoration: const InputDecoration(
+                          labelText: 'Giảm (%)',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    
+                    // --- Ô NHẬP SỐ LƯỢNG (MỚI) ---
+                    Expanded(
+                      flex: 1,
+                      child: TextField(
+                        controller: _limitController,
+                        decoration: const InputDecoration(
+                          labelText: 'Số lượng',
+                          border: OutlineInputBorder(),
+                          hintText: '0 = Vô hạn'
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) => setState((){}), // Để cập nhật text thống kê bên dưới
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+                const Text("🎁 Quà tặng kèm (Chọn voucher):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _availableCoupons.isEmpty 
+                    ? const Center(child: Text("Đang tải danh sách voucher..."))
+                    : ListView.builder(
+                        itemCount: _availableCoupons.length,
+                        itemBuilder: (context, index) {
+                          final coupon = _availableCoupons[index];
+                          final isSelected = _selectedGiftCouponIds.contains(coupon.id);
+                          return CheckboxListTile(
+                            title: Text("${coupon.code} - ${coupon.title}"),
+                            subtitle: Text(coupon.discountType == 'percent' ? "Giảm ${coupon.discountValue}%" : "Giảm ${coupon.discountValue}đ"),
+                            value: isSelected,
+                            onChanged: (val) {
+                              setState(() {
+                                if (val == true) {
+                                  _selectedGiftCouponIds.add(coupon.id);
+                                } else {
+                                  _selectedGiftCouponIds.remove(coupon.id);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                ),
+                
+                // Hiển thị thống kê & Danh sách
+                if (limit > 0)
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.people, color: Colors.blue.shade700),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Tiến độ: $used / $limit", style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const Text("người đã sử dụng mã", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _showUserList,
+                          icon: const Icon(Icons.list),
+                          label: const Text("Xem chi tiết"),
+                        )
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+                const Text(
+                  "Lưu ý: Sau khi bấm Lưu, hãy xuống mục 'Cấu hình Flash Sale' bên dưới để kích hoạt đếm ngược.",
+                  style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)
+                ),
               ],
             ),
           ),

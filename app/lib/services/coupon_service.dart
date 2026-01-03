@@ -21,6 +21,17 @@ class CouponService {
     });
   }
 
+  // 1.1 Hàm lấy danh sách Flash Sale (Dùng cho Home Page)
+  Stream<List<CouponModel>> getFlashSaleCoupons() {
+    return _couponsRef
+        .where('isFlashSale', isEqualTo: true)
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => CouponModel.fromDoc(doc)).toList();
+    });
+  }
+
   // 2. Hàm thêm mã mới
   Future<void> addCoupon(CouponModel coupon) async {
     // Lưu ý: toMap() ở đây lấy từ Model, không cần truyền ID vì Firestore tự tạo
@@ -72,5 +83,26 @@ class CouponService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  // 6. Lấy tất cả coupon (Future - dùng cho Admin select list)
+  Future<List<CouponModel>> getAllCoupons() async {
+    final snapshot = await _couponsRef.orderBy('created_at', descending: true).get();
+    // Note: Nếu không có field created_at thì bỏ orderBy hoặc thêm vào model
+    if (snapshot.docs.isEmpty) return [];
+    return snapshot.docs.map((doc) => CouponModel.fromDoc(doc)).toList();
+  }
+
+  // 7. Lấy danh sách coupon theo List ID (Dùng cho User nhận quà)
+  Future<List<CouponModel>> getCouponsByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    
+    // Firestore whereIn giới hạn 10 phần tử, nếu nhiều hơn cần chia mảng
+    // Ở đây giả sử số lượng quà tặng nhỏ (<10)
+    final snapshot = await _couponsRef
+        .where(FieldPath.documentId, whereIn: ids)
+        .get();
+        
+    return snapshot.docs.map((doc) => CouponModel.fromDoc(doc)).toList();
   }
 }
