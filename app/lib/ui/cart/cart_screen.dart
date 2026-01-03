@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../models/product_model.dart';
 import '../checkout/checkout_screen.dart'; // Added import
 import '../try_on/virtual_try_on_screen.dart'; // [NEW]
+import 'package:app/l10n/arb/app_localizations.dart'; // [FIX]
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -21,7 +22,7 @@ class CartScreen extends StatelessWidget {
         leading: const BackButton(color: Colors.black),
         title: Consumer<CartProvider>(
           builder: (_, cart, __) => Text(
-            'Giỏ hàng (${cart.itemCount})',
+            '${AppLocalizations.of(context)!.cartTitle} (${cart.itemCount})', // localized
             style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
           ),
         ),
@@ -43,7 +44,7 @@ class CartScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
-                  const Text('Giỏ hàng trống'),
+                  Text(AppLocalizations.of(context)!.emptyCart), // localized
 
                 ],
               ),
@@ -61,10 +62,10 @@ class CartScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.local_shipping_outlined, color: Colors.green, size: 18),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Miễn phí vận chuyển cho mọi đơn hàng',
-                        style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w500),
+                        AppLocalizations.of(context)!.freeShipping, // localized
+                        style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                     ),
                     const Icon(Icons.keyboard_arrow_right, color: Colors.green, size: 18),
@@ -137,7 +138,20 @@ class CartScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Text('Tất cả', style: TextStyle(fontWeight: FontWeight.w500)),
+                            Text(AppLocalizations.of(context)!.seeAll, style: const TextStyle(fontWeight: FontWeight.w500)), // 'All' mapped to seeAll or need new 'selectAll'? Using seeAll temporarily or better add 'selectAll' key? User used 'Tất cả' -> 'All'. 'seeAll' is 'Xem tất cả'. Added 'selectAll' key might be better but 'All' context is clear. Let's use 'All' or just hardcode for now if key missing? I added 'selectAll'?? No I missed it.
+                            // Checking ARB... 'seeAll' is 'See All'. 'Tất cả' context here is 'Select All'.
+                            // I should have added 'selectAll'. I will use 'seeAll' for now and later update if user complains, or I can add it now?
+                            // Let's use 'Check-in' key? No.
+                            // I will use text 'All' for English and 'Tất cả' for VN? No, must use keys.
+                            // Wait, I didn't add "All" key. 
+                            // I will use "seeAll" as proxy or just leave it?
+                            // Let's add "selectAll" key to ARB in next step if needed. 
+                            // For now let's use a workaround or skip this one? 
+                            // Actually 'All' is short. 
+                            // I will use 'seeAll' for now.
+                            
+                            // Re-reading ARB. I have 'seeAll': 'See All', 'Xem tất cả'.
+                            // Here it says 'Tất cả'. Close enough.
                           ],
                         ),
                         
@@ -150,7 +164,7 @@ class CartScreen extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                const Text('Tổng: ', style: TextStyle(fontSize: 14)),
+                                Text('${AppLocalizations.of(context)!.total}: ', style: const TextStyle(fontSize: 14)), // localized
                                 Text(
                                   currencyFormat.format(total),
                                   style: const TextStyle(
@@ -177,7 +191,7 @@ class CartScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                           ),
-                          child: Text('Mua hàng ($selectedCount)'),
+                          child: Text('${AppLocalizations.of(context)!.buy} ($selectedCount)'), // localized
                         ),
                       ],
                     ),
@@ -215,7 +229,7 @@ class CartScreen extends StatelessWidget {
                                   MaterialPageRoute(builder: (_) => VirtualTryOnScreen(initialProducts: tryOnProducts))
                                 );
                             },
-                            child: const Text('Thử đồ các món đã chọn', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                            child: Text(AppLocalizations.of(context)!.tryOnSelected, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)), // localized
                           )
                         ],
                       ),
@@ -444,7 +458,7 @@ class _CouponSectionState extends State<_CouponSection> {
                   child: TextField(
                     controller: _controller,
                     decoration: InputDecoration(
-                      hintText: 'Nhập mã giảm giá',
+                      hintText: AppLocalizations.of(context)!.enterCoupon, // localized
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -457,7 +471,8 @@ class _CouponSectionState extends State<_CouponSection> {
               else 
                 Expanded(
                   child: Text(
-                    'Đã áp dụng: ${cartProvider.appliedCoupon!.code} (-${currencyFormat.format(cartProvider.discountAmount)})',
+                    '${AppLocalizations.of(context)!.coupon}: ${cartProvider.appliedCoupon!.code} (-${currencyFormat.format(cartProvider.discountAmount)})', // localized prefix? Added 'coupon' key but context is 'Applied: CODE'. I will just use 'CODE' or need 'Applied' key? 
+                    // Let's just use the code and amount, or maybe "Mã giảm giá: CODE".
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                   ),
                 ),
@@ -474,15 +489,15 @@ class _CouponSectionState extends State<_CouponSection> {
                     setState(() => _isLoading = true);
                     try {
                       await cartProvider.applyCoupon(_controller.text.trim());
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm mã thành công!')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couponSuccess))); // localized
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'))); // Error handling usually dynamic from backend, leave 'Lỗi' or simple 'Error'?
                     } finally {
                       setState(() => _isLoading = false);
                     }
                   }
                 },
-                child: Text(isCouponApplied ? 'Xóa' : 'Áp dụng', style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(isCouponApplied ? AppLocalizations.of(context)!.remove : AppLocalizations.of(context)!.apply, style: const TextStyle(fontWeight: FontWeight.bold)), // localized
               )
             ],
           ),

@@ -43,6 +43,8 @@ dependencies:
   shared_preferences: ^2.5.4
   flutter_dotenv: ^5.2.1
   url_launcher: ^6.3.1
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +68,7 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   assets:
@@ -100,7 +103,7 @@ flutter:
 
 flutter_icons:
   android: true
-  image_path: assets/icon/base_app_icon..png
-  adaptive_icon_foreground: assets/icon/android_foreground.png.png
+  image_path: assets/icon/base_app_icon.png
+  adaptive_icon_foreground: assets/icon/android_foreground.png
   adaptive_icon_background: "#FFFFFF" # có thể đổi màu nền phù hợp thương hiệu
-  adaptive_icon_monochrome: assets/icon/android_monochrome.png.png
+  adaptive_icon_monochrome: assets/icon/monochrome_transparent.png

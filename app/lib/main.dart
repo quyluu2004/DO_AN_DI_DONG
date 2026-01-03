@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // [NEW]
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
@@ -8,6 +9,8 @@ import 'providers/order_provider.dart';
 import 'providers/address_provider.dart';
 import 'providers/favorite_provider.dart';
 import 'providers/history_provider.dart';
+import 'providers/locale_provider.dart'; // [NEW]
+import 'package:app/l10n/arb/app_localizations.dart'; // [NEW]
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -36,16 +39,31 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => AddressProvider()),
         ChangeNotifierProvider(create: (_) => FavoriteProvider()..loadFavorites()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()), // [NEW]
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'FashionApp',
-        theme: AppTheme.light,
-        home: const AuthGate(),
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, child) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'FashionApp',
+            theme: AppTheme.light,
+            locale: localeProvider.locale, // [NEW] Active Locale
+            localizationsDelegates: [
+              AppLocalizations.delegate, // [UNCOMMENTED]
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('vi'),
+              Locale('en'),
+            ],
+            home: const AuthGate(),
+          );
+        },
       ),
     );
   }

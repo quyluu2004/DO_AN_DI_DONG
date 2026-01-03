@@ -632,49 +632,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       debugPrint('Error launching MoMo: $e');
     }
     
-    // Sau khi mở App (hoặc fail), hiện dialog trác nhận thủ công
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-           children: const [
-             Icon(Icons.payment, color: Colors.pink),
-             SizedBox(width: 8),
-             Text('Xác nhận thanh toán'),
-           ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Vui lòng hoàn tất chuyển tiền trên ứng dụng MoMo.'),
-            const SizedBox(height: 12),
-            Text('Số tiền: ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(amount)}', 
-                 style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            const Text('Người nhận: SHOP THOI TRANG (0399999999)'),
-            const SizedBox(height: 16),
-            const Text('Sau khi chuyển khoản thành công, vui lòng bấm nút bên dưới để hoàn tất đơn hàng.'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx), // Huỷ
-            child: const Text('Quay lại', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx); // Đóng dialog
-              _confirmOrderPlacement(); // Gọi hàm tạo đơn hàng thực sự
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
-            child: const Text('Đã thanh toán xong'),
-          ),
-        ],
-      ),
-    );
+    // [UPDATED] Tự động hoàn tất đơn hàng thay vì hiện dialog
+    if (mounted) {
+       _confirmOrderPlacement();
+    }
   }
 
   void _placeOrder(CartProvider cartProvider, double total, Address address) {

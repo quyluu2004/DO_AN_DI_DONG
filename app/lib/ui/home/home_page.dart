@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'package:app/l10n/arb/app_localizations.dart'; // [NEW]
 
 import '../../models/ui_config_model.dart';
 import '../../services/ui_service.dart';
@@ -48,6 +49,7 @@ class _FashionHomePageState extends State<FashionHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: Stack(
         children: [
@@ -81,9 +83,9 @@ class _FashionHomePageState extends State<FashionHomePage> {
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
         unselectedLabelStyle: const TextStyle(fontSize: 10),
         items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Shop'),
-          const BottomNavigationBarItem(icon: Icon(Icons.style_outlined), label: 'Style'), // [UPDATED]
-          const BottomNavigationBarItem(icon: Icon(Icons.checkroom), label: 'Try-On'), // Updated Icon and Label
+          BottomNavigationBarItem(icon: const Icon(Icons.home_filled), label: l10n.home), // localized
+          BottomNavigationBarItem(icon: const Icon(Icons.style_outlined), label: l10n.style), // localized
+          BottomNavigationBarItem(icon: const Icon(Icons.checkroom), label: l10n.tryOn), // localized
           BottomNavigationBarItem(
             icon: Consumer<CartProvider>(
               builder: (context, cart, child) {
@@ -94,9 +96,9 @@ class _FashionHomePageState extends State<FashionHomePage> {
                 );
               },
             ),
-            label: 'Cart',
+            label: l10n.cart, // localized
           ),
-          const BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Me'),
+          BottomNavigationBarItem(icon: const Icon(Icons.person_outline), label: l10n.profile), // localized
         ],
       ),
     );
@@ -336,12 +338,12 @@ class _HomeHeader extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Text('Hoodie For Men...', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    Text(AppLocalizations.of(context)!.searchPlaceholder, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       decoration: BoxDecoration(color: Colors.orange[50], borderRadius: BorderRadius.circular(4)),
-                      child: const Text('Gần đây', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: Text(AppLocalizations.of(context)!.recently, style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                     const Spacer(),
                     const Icon(Icons.camera_alt_outlined, color: Colors.grey, size: 20),
@@ -374,7 +376,7 @@ class _DynamicCategoryTabs extends StatelessWidget {
     return FutureBuilder<List<String>>(
       future: ProductService.instance.getUniqueCategories(),
       builder: (context, snapshot) {
-        final categories = ['All', 'Women', 'Men', 'Kids', ...?snapshot.data];
+        final categories = [AppLocalizations.of(context)!.seeAll, 'Women', 'Men', 'Kids', ...?snapshot.data];
         
         return Container(
           height: 40,
@@ -568,10 +570,10 @@ class _NavigationChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      {'icon': Icons.favorite, 'label': 'For You', 'active': true},
-      {'icon': Icons.new_releases, 'label': 'New In', 'active': false},
-      {'icon': Icons.local_offer, 'label': 'Deals', 'active': false},
-      {'icon': Icons.star, 'label': 'Bestsellers', 'active': false},
+      {'icon': Icons.favorite, 'label': AppLocalizations.of(context)!.forYou, 'active': true},
+      {'icon': Icons.new_releases, 'label': AppLocalizations.of(context)!.newArrivals, 'active': false},
+      {'icon': Icons.local_offer, 'label': AppLocalizations.of(context)!.deals, 'active': false},
+      {'icon': Icons.star, 'label': AppLocalizations.of(context)!.bestSellers, 'active': false},
     ];
 
     return Container(

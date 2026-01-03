@@ -19,6 +19,8 @@ import '../../providers/history_provider.dart';
 import '../loyalty/loyalty_screen.dart'; // [NEW]
 import '../../services/loyalty_service.dart'; // [NEW]
 import '../components/profile_stats_section.dart'; // [NEW] Import widget mới
+import '../settings/settings_screen.dart'; // [NEW]
+import 'package:app/l10n/arb/app_localizations.dart'; // [NEW]
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -75,12 +77,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SliverToBoxAdapter(child: _EngagementSection()),
 
               // 6. Recommendations Title
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                  child: Padding(
-                   padding: EdgeInsets.all(16.0),
+                   padding: const EdgeInsets.all(16.0),
                    child: Text(
-                     'Gợi ý cho bạn',
-                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                     AppLocalizations.of(context)!.recommendations,
+                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                    ),
                  ),
               ),
@@ -102,6 +104,7 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // Sử dụng StreamBuilder để lắng nghe thay đổi từ Firestore (Real-time)
     return StreamBuilder<UserModel?>(
       stream: UserService.instance.currentUserProfileStream(),
@@ -154,6 +157,7 @@ class _ProfileHeader extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
+                    Text(l10n.member, style: TextStyle(color: Colors.grey[600], fontSize: 13)), // localized
                     // Dynamic Tier Badge
                     Builder(
                       builder: (context) {
@@ -189,15 +193,14 @@ class _ProfileHeader extends StatelessWidget {
               IconButton(
                 onPressed: () {}, 
                 icon: const Icon(Icons.qr_code_scanner), 
-                tooltip: 'Quét mã',
+                tooltip: l10n.scanCode, // localized
               ),
               IconButton(
                 onPressed: () {
-                   // Settings / Sign out
-                   _showSettings(context);
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                 }, 
                 icon: const Icon(Icons.settings_outlined),
-                tooltip: 'Cài đặt',
+                tooltip: l10n.settingsTitle, // localized
               ),
             ],
           ),
@@ -257,13 +260,13 @@ class _MyOrdersSection extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Đơn hàng của tôi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.myOrders, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // localized
                   InkWell(
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen())),
                     child: Row(
-                      children: const [
-                        Text('Xem tất cả', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                        Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                      children: [
+                        Text(AppLocalizations.of(context)!.seeAll, style: const TextStyle(fontSize: 12, color: Colors.grey)), // localized
+                        const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                       ],
                     ),
                   )
@@ -275,31 +278,31 @@ class _MyOrdersSection extends StatelessWidget {
                 children: [
                   _TaskIcon(
                     icon: Icons.credit_card, 
-                    label: 'Chờ thanh toán', 
+                    label: AppLocalizations.of(context)!.pending, 
                     badgeCount: pendingCount,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 1))),
                   ),
                   _TaskIcon(
                     icon: Icons.inventory_2_outlined, 
-                    label: 'Đang xử lý', 
-                    // badgeCount: pendingCount, // Duplicate badge? Maybe leave empty 
+                    label: AppLocalizations.of(context)!.processing, 
+                    // badgeCount: pendingCount, 
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 1))),
                   ),
                   _TaskIcon(
                     icon: Icons.local_shipping_outlined, 
-                    label: 'Đang giao', 
+                    label: AppLocalizations.of(context)!.shipping, 
                     badgeCount: shippingCount, 
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 2))),
                   ),
                   _TaskIcon(
                     icon: Icons.rate_review_outlined, 
-                    label: 'Đánh giá', 
+                    label: AppLocalizations.of(context)!.reviews, 
                     badgeCount: reviewCount,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 3))),
                   ),
                   _TaskIcon(
                     icon: Icons.replay_outlined, 
-                    label: 'Đổi trả', 
+                    label: AppLocalizations.of(context)!.returns, 
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen(initialIndex: 4))),
                   ),
                 ],
@@ -362,18 +365,18 @@ class _ServicesSection extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          const _ServiceItem(icon: Icons.headset_mic_outlined, label: 'CSKH'),
+          _ServiceItem(icon: Icons.headset_mic_outlined, label: AppLocalizations.of(context)!.support), // localized
           _ServiceItem(
             icon: Icons.calendar_today_outlined, 
-            label: 'Điểm danh',
+            label: AppLocalizations.of(context)!.checkIn, // localized
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoyaltyScreen())),
           ),
           _ServiceItem(
             icon: Icons.post_add_outlined, 
-            label: 'Bài đăng',
+            label: AppLocalizations.of(context)!.posts, // localized
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPostsScreen())),
           ),
-          const _ServiceItem(icon: Icons.shield_outlined, label: 'Chính sách'),
+          _ServiceItem(icon: Icons.shield_outlined, label: AppLocalizations.of(context)!.policies), // localized
         ],
       ),
     );
@@ -417,12 +420,12 @@ class _EngagementSection extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-             Expanded(child: _EngagementItem(label: 'Đang theo dõi', subLabel: '0 shop', icon: Icons.storefront_outlined)),
+             Expanded(child: _EngagementItem(label: AppLocalizations.of(context)!.following, subLabel: '0 shop', icon: Icons.storefront_outlined)), // localized
              const VerticalDivider(),
              Expanded(
                child: Consumer<HistoryProvider>(
                  builder: (_, history, __) => _EngagementItem(
-                   label: 'Lịch sử xem', 
+                   label: AppLocalizations.of(context)!.viewedHistory, // localized
                    subLabel: '${history.viewedProductIds.length} sản phẩm', 
                    icon: Icons.history_outlined,
                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
@@ -433,7 +436,7 @@ class _EngagementSection extends StatelessWidget {
              Expanded(
                child: Consumer<FavoriteProvider>(
                  builder: (_, fav, __) => _EngagementItem(
-                   label: 'Yêu thích', 
+                   label: AppLocalizations.of(context)!.favorites, // localized
                    subLabel: '${fav.favoriteIds.length} sản phẩm', 
                    icon: Icons.favorite_border,
                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoriteListScreen())),

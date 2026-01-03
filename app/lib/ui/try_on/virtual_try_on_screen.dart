@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../services/product_service.dart';
 import '../../providers/cart_provider.dart';
+import 'package:app/l10n/arb/app_localizations.dart'; // [NEW]
 
 class VirtualTryOnScreen extends StatefulWidget {
   final List<Product>? initialProducts; // [NEW]
@@ -108,9 +109,9 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> with SingleTick
     if (_selectedShoes != null) { cartProvider.addToCart(_selectedShoes!); count++; }
 
     if (count > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã thêm $count sản phẩm vào giỏ!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.addedToCart(count)))); // localized
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chưa chọn món nào để thêm!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.noItemToAdded))); // localized
     }
   }
 
@@ -118,11 +119,11 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Phòng Thử Đồ Ảo'),
+        title: Text(AppLocalizations.of(context)!.virtualTryOnTitle), // localized
         actions: [
           IconButton(
             icon: const Icon(Icons.playlist_add), // Import from Cart icon
-            tooltip: 'Lấy đồ từ Giỏ hàng',
+            tooltip: AppLocalizations.of(context)!.importFromCart, // localized
             onPressed: () {
               showModalBottomSheet(
                 context: context, 
@@ -209,11 +210,11 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> with SingleTick
                     controller: _tabController,
                     labelColor: Colors.black,
                     unselectedLabelColor: Colors.grey,
-                    tabs: const [
-                      Tab(text: 'Áo (Top)'),
-                      Tab(text: 'Quần (Bot)'),
-                      Tab(text: 'Khoác'),
-                      Tab(text: 'Giày'),
+                    tabs: [
+                      Tab(text: AppLocalizations.of(context)!.top), // localized
+                      Tab(text: AppLocalizations.of(context)!.bottom), // localized
+                      Tab(text: AppLocalizations.of(context)!.outerwear), // localized
+                      Tab(text: AppLocalizations.of(context)!.shoes), // localized
                     ],
                   ),
                 ),
@@ -317,7 +318,7 @@ class _ProductGrid extends StatelessWidget {
            return match;
         }).toList();
 
-        if (products.isEmpty) return const Center(child: Text('Không có sản phẩm nào.'));
+        if (products.isEmpty) return Center(child: Text(AppLocalizations.of(context)!.noProductAvailable)); // localized
 
         return GridView.builder(
           padding: const EdgeInsets.all(8),
@@ -380,10 +381,10 @@ class _CartImportSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Chọn từ Giỏ hàng', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.of(context)!.selectFromCart, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), // localized
           const SizedBox(height: 12),
           if (cartItems.isEmpty)
-            const Center(child: Text('Không có sản phẩm nào hỗ trợ Try-On trong giỏ.', style: TextStyle(color: Colors.grey)))
+             Center(child: Text(AppLocalizations.of(context)!.noTryOnItems, style: const TextStyle(color: Colors.grey))) // localized
           else
             Expanded(
               child: ListView.separated(
