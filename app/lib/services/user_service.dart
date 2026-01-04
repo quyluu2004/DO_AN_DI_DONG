@@ -303,4 +303,33 @@ class UserService {
 
     await batch.commit();
   }
+
+  /// Lấy stream danh sách user cho Admin
+  /// [query] - Tìm kiếm theo tên hoặc email
+  /// [role] - Lọc theo role (buyer, admin, staff)
+  Stream<List<UserModel>> getUsersStream({String? query, String? role}) {
+    Query<Map<String, dynamic>> ref = _usersCol;
+
+    if (role != null) {
+      ref = ref.where('role', isEqualTo: role);
+    }
+
+    return ref.snapshots().map((snapshot) {
+      final users = snapshot.docs.map((doc) => UserModel.fromDoc(doc)).toList();
+      
+      if (query != null && query.isNotEmpty) {
+        final lowerQuery = query.toLowerCase();
+        return users.where((user) {
+          final name = user.fullName.toLowerCase();
+          final email = user.email.toLowerCase();
+          final phone = user.phoneNumber.toLowerCase();
+          return name.contains(lowerQuery) || 
+                 email.contains(lowerQuery) || 
+                 phone.contains(lowerQuery);
+        }).toList();
+      }
+      
+      return users;
+    });
+  }
 }

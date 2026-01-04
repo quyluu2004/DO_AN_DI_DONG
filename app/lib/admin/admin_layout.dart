@@ -5,14 +5,9 @@ import 'products/admin_products_screen.dart';
 import 'orders/admin_orders_screen.dart';
 import 'marketing/admin_coupon_screen.dart';
 import 'ui/admin_interface_screen.dart';
+import 'customers/admin_customers_screen.dart';
 
-// Placeholder class if AdminFavoritesScreen doesn't exist yet, 
-// creating a dummy one here to avoid errors since I referenced it above.
-class AdminFavoritesScreen extends StatelessWidget {
-  const AdminFavoritesScreen({super.key});
-  @override 
-  Widget build(BuildContext context) => const Center(child: Text('Khách hàng'));
-}
+
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});
@@ -29,7 +24,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     const AdminDashboard(),
     const AdminProductsScreen(),
     const AdminOrdersScreen(),
-    const AdminFavoritesScreen(), // Placeholder for now or separate file
+    const AdminCustomersScreen(),
     const AdminCouponScreen(),
     const AdminInterfaceScreen(),
   ];
