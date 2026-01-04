@@ -105,8 +105,21 @@ class _FashionHomePageState extends State<FashionHomePage> {
   }
 }
 
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends StatefulWidget {
   const _HomeTab();
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  String _selectedCategory = 'Xem tất cả';
+
+  void _onCategorySelected(String category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +133,12 @@ class _HomeTab extends StatelessWidget {
             child: CustomScrollView(
               slivers: [
                 // 2. Category Tabs (Text Tabs)
-                const SliverToBoxAdapter(child: _DynamicCategoryTabs()),
+                SliverToBoxAdapter(
+                  child: _CategoryTabs(
+                    selectedCategory: _selectedCategory,
+                    onCategorySelected: _onCategorySelected,
+                  ),
+                ),
 
                 // 3. Banner Slider (Updated)
                 const SliverToBoxAdapter(child: _BannerSlider()),
@@ -142,7 +160,7 @@ class _HomeTab extends StatelessWidget {
                 const SliverToBoxAdapter(child: _PromoBanner()),
                 
                 // 9. Recommendation Grid
-                const _ProductGrid(),
+                _ProductGrid(category: _selectedCategory),
                 
                 const SliverToBoxAdapter(child: SizedBox(height: 20)),
               ],
@@ -368,44 +386,50 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _DynamicCategoryTabs extends StatelessWidget {
-  const _DynamicCategoryTabs();
+class _CategoryTabs extends StatelessWidget {
+  final String selectedCategory;
+  final ValueChanged<String> onCategorySelected;
+
+  const _CategoryTabs({
+    required this.selectedCategory,
+    required this.onCategorySelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<String>>(
-      future: ProductService.instance.getUniqueCategories(),
-      builder: (context, snapshot) {
-        final categories = [AppLocalizations.of(context)!.seeAll, 'Women', 'Men', 'Kids', ...?snapshot.data];
-        
-        return Container(
-          height: 40,
-          color: Colors.white,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final isSelected = index == 0;
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                alignment: Alignment.center,
-                decoration: isSelected ? const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.black, width: 2))
-                ) : null,
-                child: Text(
-                  categories[index],
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? Colors.black : Colors.black54,
-                    fontSize: 14,
-                  ),
+    // Categories as per user request
+    final categories = ['Xem tất cả', 'Nam', 'Nữ', 'Kid', 'Phụ kiện'];
+    
+    return Container(
+      height: 40,
+      color: Colors.white,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final isSelected = category == selectedCategory;
+          return GestureDetector(
+            onTap: () => onCategorySelected(category),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              alignment: Alignment.center,
+              decoration: isSelected ? const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.black, width: 2))
+              ) : null,
+              child: Text(
+                category,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.black : Colors.black54,
+                  fontSize: 14,
                 ),
-              );
-            },
-          ),
-        );
-      },
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -685,15 +709,36 @@ class _FeaturedBanner extends StatelessWidget {
 }
 
 class _ProductGrid extends StatelessWidget {
-  const _ProductGrid();
+  final String category;
+  const _ProductGrid({required this.category});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Product>>(
-      stream: ProductService.instance.getProductsStream(status: ProductStatus.active),
+      stream: ProductService.instance.getProductsStream(
+        status: ProductStatus.active,
+        category: category,
+      ),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        if (snapshot.hasError) {
+           return SliverToBoxAdapter(
+             child: Padding(
+               padding: const EdgeInsets.all(20),
+               child: Center(
+                 child: SelectableText(
+                   'Lỗi Firestore (Cần tạo Index): ${snapshot.error}', 
+                   style: const TextStyle(color: Colors.red),
+                   textAlign: TextAlign.center,
+                 ),
+               ),
+             ),
+           );
+        }
+        if (!snapshot.hasData) {
            return const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()));
+        }
+        if (snapshot.data!.isEmpty) {
+           return const SliverToBoxAdapter(child: Center(child: Text('Không có sản phẩm nào')));
         }
         final products = snapshot.data!;
 

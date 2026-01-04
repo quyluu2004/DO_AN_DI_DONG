@@ -27,19 +27,21 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
           Row(
             children: [
               // Search Box
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Tìm theo tên, email, sđt...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Tìm theo tên, email, sđt...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    onChanged: (val) => setState(() => _searchQuery = val),
                   ),
-                  onChanged: (val) => setState(() => _searchQuery = val),
                 ),
               ),
               const SizedBox(width: 16),
@@ -147,7 +149,13 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
       ),
       title: Row(
         children: [
-          Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Flexible(
+            child: Text(
+              user.fullName, 
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           const SizedBox(width: 8),
           _UserRoleBadge(role: user.role),
           if (user.isVerified) ...[

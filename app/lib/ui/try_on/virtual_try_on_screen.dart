@@ -158,10 +158,12 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> with SingleTick
                    Center(
                     child: Opacity(
                       opacity: 0.3,
-                      child: Image.asset(
-                        'assets/images/model_placeholder.png', // Ensure you have this or use Icon
-                        errorBuilder: (_,__,___) => const Icon(Icons.person, size: 300, color: Colors.grey),
-                      ),
+                      child: Icon(Icons.person, size: 300, color: Colors.grey),
+                      // TODO: Restore Image.asset when 'assets/images/model_placeholder.png' is added regarding pubspec.yaml
+                      // child: Image.asset(
+                      //   'assets/images/model_placeholder.png', 
+                      //   errorBuilder: (_,__,___) => const Icon(Icons.person, size: 300, color: Colors.grey),
+                      // ),
                     ),
                   ),
 

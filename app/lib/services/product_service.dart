@@ -71,6 +71,7 @@ class ProductService {
   /// [ascending] - Sắp xếp tăng dần hay giảm dần (mặc định: false = giảm dần)
   Stream<List<Product>> getProductsStream({
     ProductStatus? status,
+    String? category, // [NEW] Filter by category
     String sortBy = 'createdAt',
     bool ascending = false,
     int? limit,
@@ -80,6 +81,28 @@ class ProductService {
     // Filter theo status
     if (status != null) {
       query = query.where('status', isEqualTo: status.value);
+    }
+
+    // Filter theo category
+    if (category != null && category.isNotEmpty && category != 'Xem tất cả') {
+      // Mapping Vietnamese UI terms to Database values if necessary, 
+      // or assuming DB uses 'Men', 'Women' etc.
+      // Based on user request config: "Nam", "Nữ", "Kid", "Phụ kiện"
+      // Let's standardise to what likely exists in DB or map it.
+      // Assuming DB has 'Men', 'Women', 'Kids', 'Accessories' or similar.
+      // Or if the user inputs are exact matches.
+      // For now, I will use exact match logic, but we might need a mapper.
+      // Let's try to map typical VN terms to English keys if DB uses English, 
+      // OR just query the string directly if DB uses VN.
+      // Given previous file content showing 'Men', 'Women', let's map.
+      
+      String dbCategory = category;
+      if (category == 'Nam') dbCategory = 'Men';
+      if (category == 'Nữ') dbCategory = 'Women';
+      if (category == 'Kid') dbCategory = 'Kids'; // "Kid" or "Kids"
+      if (category == 'Phụ kiện') dbCategory = 'Accessories';
+
+      query = query.where('category', isEqualTo: dbCategory);
     }
 
     // Sort
