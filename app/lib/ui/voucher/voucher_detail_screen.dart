@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-// [SỬA LỖI 1]: Đổi 'do_an_di_dong' thành 'app' và dùng đường dẫn tương đối
-import 'package:app/models/coupon_model.dart';
-import 'package:app/models/product_model.dart';
-import 'package:app/services/product_service.dart';
-import 'package:app/ui/product/product_detail_screen.dart';
+import '../../models/coupon_model.dart';
+import '../../models/product_model.dart';
+import '../../services/product_service.dart';
+import '../product/product_detail_screen.dart';
 
 class VoucherDetailScreen extends StatelessWidget {
   final CouponModel coupon;
@@ -15,8 +13,6 @@ class VoucherDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
-    
-    // Đảm bảo CouponType đã có trong coupon_model.dart
     bool isFreeShip = coupon.type == CouponType.freeShip;
     Color themeColor = isFreeShip ? Colors.teal : Colors.orange.shade900;
 
@@ -74,7 +70,7 @@ class VoucherDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. Tiêu đề
+          // 2. Tiêu đề danh sách sản phẩm
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -82,16 +78,15 @@ class VoucherDetailScreen extends StatelessWidget {
                 children: const [
                   Icon(Icons.flash_on, color: Colors.orange),
                   SizedBox(width: 5),
-                  Text("DÙNG NGAY VỚI SẢN PHẨM NÀY", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.orange)),
+                  Text("SẢN PHẨM ÁP DỤNG", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.orange)),
                 ],
               ),
             ),
           ),
 
           // 3. Grid sản phẩm
-          // [ĐIỀU CHỈNH] Dùng 'Product' và 'ProductService.instance' để khớp với dự án
           FutureBuilder<List<Product>>(
-            future: ProductService.instance.getDiscountedProducts(), 
+            future: ProductService.instance.getProductsForCoupon(coupon.targetCategories),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()));
@@ -123,7 +118,7 @@ class VoucherDetailScreen extends StatelessWidget {
                                 child: ClipRRect(
                                   borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                                   child: Image.network(
-                                    product.primaryImageUrl ?? '', 
+                                    product.primaryImageUrl ?? '',
                                     width: double.infinity,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_,__,___) => Container(color: Colors.grey[200]),

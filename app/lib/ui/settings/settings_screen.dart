@@ -4,6 +4,9 @@ import '../../services/auth_service.dart';
 import '../auth/login_page.dart';
 import 'package:app/l10n/arb/app_localizations.dart';
 import '../../providers/locale_provider.dart';
+import '../../models/user_model.dart'; // [NEW]
+import '../../services/user_service.dart'; // [NEW]
+import '../profile/edit_profile_screen.dart'; // [NEW]
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -47,6 +50,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                  )
                ],
              ),
+          ),
+          
+          ListTile(
+            leading: const Icon(Icons.edit, color: Colors.blue),
+            title: const Text('Chỉnh sửa hồ sơ', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+            onTap: () async {
+               // Fetch latest data before editing
+               final user = AuthService.instance.currentUser;
+               if (user == null) return;
+               
+               // Show loading or just wait
+               final userModel = await UserService.instance.getCurrentUserProfile();
+               // If no user model yet, create empty one from auth
+               final initialUser = userModel ?? UserModel(
+                 uid: user.uid, 
+                 email: user.email ?? '', 
+                 fullName: user.displayName ?? '',
+                 phoneNumber: '',
+                 gender: 'other',
+                 birthday: null,
+                 avatarUrl: user.photoURL ?? '',
+                 role: 'user',
+               );
+
+               if (context.mounted) {
+                 Navigator.push(context, MaterialPageRoute(builder: (_) => EditProfileScreen(initialUser: initialUser)));
+               }
+            },
           ),
           
           const SizedBox(height: 20),

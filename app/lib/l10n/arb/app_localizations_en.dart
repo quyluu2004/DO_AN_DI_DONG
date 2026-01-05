@@ -244,4 +244,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noProductAvailable => 'No products available.';
+
+  @override
+  String get allProducts => 'All Products';
 }

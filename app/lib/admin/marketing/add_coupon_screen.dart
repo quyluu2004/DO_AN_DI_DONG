@@ -13,6 +13,7 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
   final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
   final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final _valueController = TextEditingController();
   final _minOrderController = TextEditingController();
   final _maxDiscountController = TextEditingController(); // Dùng cho %
@@ -100,6 +101,7 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
         id: '', // Firestore tự sinh ID
         code: _codeController.text,
         title: _titleController.text,
+        description: _descriptionController.text,
         type: _couponType,
         discountType: _discountType,
         discountValue: discountValue,
@@ -147,6 +149,11 @@ class _AddCouponScreenState extends State<AddCouponScreen> {
                 controller: _titleController,
                 decoration: InputDecoration(labelText: 'Tên chương trình', border: OutlineInputBorder()),
                 validator: (v) => v!.isEmpty ? 'Nhập tên' : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Mô tả (VD: tối đa 10k)', border: OutlineInputBorder()),
               ),
               SizedBox(height: 20),
               

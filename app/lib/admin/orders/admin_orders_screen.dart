@@ -12,65 +12,10 @@ class AdminOrdersScreen extends StatefulWidget {
   State<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
 }
 
-class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: OrderStatus.values.length + 1, vsync: this);
-    // Fetch orders if possible. As an admin, we might need a separate method to fetch ALL orders
-    // For now, assuming OrderProvider has orders loaded or we can trigger it.
-    // Ideally, OrderProvider should have a method to fetch all orders for admin.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-       // Trigger fetch all orders (mock or real)
-       // context.read<OrderProvider>().fetchAllOrders();
-    });
-  }
-  
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
+class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   @override
   Widget build(BuildContext context) {
-    // In a real app, you'd use a StreamBuilder or Consumer<OrderProvider> with a specific 'adminOrders' list
-    // For this generic setup, I'll simulate using the provider's order list
-    
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            labelColor: Colors.black,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.black,
-            tabs: [
-              const Tab(text: 'Tất cả'),
-              ...OrderStatus.values.map((s) => Tab(text: s.label)),
-            ],
-          ),
-        ),
-        Expanded(
-          child: StreamBuilder<Object>( // Ideally stream from Firestore 'orders' collection
-            stream: null, // Replace with Stream if not using Provider for realtime
-            builder: (context, snapshot) {
-              // Since we don't have a direct 'fetchAllOrders' stream in Provider yet,
-              // let's assume we can get it from OrderProvider if we update it, or just use Stream directly here.
-              // To be safe and agentic, I'll implement a StreamBuilder directly to Firestore here for Admin.
-              // This requires importing cloud_firestore.
-              
-              return _AdminOrderList(tabIndex: _tabController.index);
-            }
-          ),
-        ),
-      ],
-    );
+    return const _AdminOrderList(tabIndex: 0);
   }
 }
 

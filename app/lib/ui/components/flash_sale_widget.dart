@@ -11,17 +11,22 @@ class FlashSaleWidget extends StatefulWidget {
     FlashSaleConfig? config,
     // Hỗ trợ các tham số cũ để tránh lỗi ở home_page.dart
     DateTime? endTime,
+    String? title,
     String? code,
     double? discountValue,
     String? discountType,
     bool isActive = true,
+    this.onDismiss,
   }) : config = config ?? FlashSaleConfig(
           endTime: endTime,
+          title: title ?? 'Flash Sale',
           code: code,
           discountValue: discountValue,
           discountType: discountType ?? 'percent',
           isActive: isActive,
         );
+
+  final VoidCallback? onDismiss;
 
   @override
   State<FlashSaleWidget> createState() => _FlashSaleWidgetState();
@@ -142,11 +147,15 @@ class _FlashSaleWidgetState extends State<FlashSaleWidget> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.flash_on, color: (_isSoldOut || _hasUsed) ? Colors.white54 : Colors.yellow, size: 14),
-                    Text(
-                      _hasUsed ? "ĐÃ DÙNG" : (_isSoldOut ? "HẾT MÃ" : "FLASH SALE"),
-                      style: TextStyle(
-                        color: (_isSoldOut || _hasUsed) ? Colors.white54 : Colors.yellow,
-                        fontWeight: FontWeight.bold, fontSize: 11
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _hasUsed ? "ĐÃ DÙNG" : (_isSoldOut ? "HẾT MÃ" : widget.config.title.toUpperCase()),
+                        style: TextStyle(
+                          color: (_isSoldOut || _hasUsed) ? Colors.white54 : Colors.yellow,
+                          fontWeight: FontWeight.bold, fontSize: 11
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -207,7 +216,10 @@ class _FlashSaleWidgetState extends State<FlashSaleWidget> {
             top: -8,
             right: -8,
             child: GestureDetector(
-              onTap: () => setState(() => _isVisible = false),
+              onTap: () {
+                setState(() => _isVisible = false);
+                widget.onDismiss?.call();
+              },
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(

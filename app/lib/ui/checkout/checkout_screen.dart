@@ -759,11 +759,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     } catch (e) {
       if (mounted) {
-        String message = 'Lỗi: $e';
-        if (e.toString().contains("Dart exception thrown")) {
-          message = "Lỗi kết nối hoặc dữ liệu không hợp lệ. Vui lòng thử lại.";
-        }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        // Show actual error message (e.g., "Sản phẩm X không đủ hàng")
+        String message = e.toString().replaceAll('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ));
       }
     }
   }

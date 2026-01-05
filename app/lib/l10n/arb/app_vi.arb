@@ -77,5 +77,6 @@
     "bottom": "Quần (Bot)",
     "outerwear": "Khoác",
     "shoes": "Giày",
-    "noProductAvailable": "Không có sản phẩm nào."
+    "noProductAvailable": "Không có sản phẩm nào.",
+    "allProducts": "Tất cả sản phẩm"
 }

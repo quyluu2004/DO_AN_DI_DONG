@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../models/user_model.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import 'grant_voucher_dialog.dart';
 
 class AdminCustomersScreen extends StatefulWidget {
   const AdminCustomersScreen({super.key});
@@ -192,12 +193,21 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
           ),
         ],
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.more_vert),
-        onPressed: () {
-          // Show user details dialog or actions
-          _showUserDetails(context, user);
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          if (value == 'detail') {
+            _showUserDetails(context, user);
+          } else if (value == 'voucher') {
+            showDialog(
+              context: context,
+              builder: (_) => GrantVoucherDialog(userId: user.uid, userName: user.fullName),
+            );
+          }
         },
+        itemBuilder: (context) => [
+          const PopupMenuItem(value: 'detail', child: Text('Xem chi tiết')),
+          const PopupMenuItem(value: 'voucher', child: Text('Tặng Voucher')),
+        ],
       ),
     );
   }

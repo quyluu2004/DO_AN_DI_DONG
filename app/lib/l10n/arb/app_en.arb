@@ -77,5 +77,6 @@
     "bottom": "Bottom",
     "outerwear": "Outerwear",
     "shoes": "Shoes",
-    "noProductAvailable": "No products available."
+    "noProductAvailable": "No products available.",
+    "allProducts": "All Products"
 }

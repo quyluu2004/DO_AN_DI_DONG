@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/coupon_model.dart';
 import 'package:intl/intl.dart';
-import 'voucher_detail_screen.dart';
+import '../voucher/voucher_detail_screen.dart';
 
 class GiftReceivedDialog extends StatelessWidget {
   final List<CouponModel> coupons;

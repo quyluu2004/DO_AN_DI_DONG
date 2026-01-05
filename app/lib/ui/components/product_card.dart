@@ -191,12 +191,7 @@ class ProductCard extends StatelessWidget {
   }
 
   String _formatPrice(int price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}M đ';
-    } else if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}K đ';
-    }
-    return '$price đ';
+    return '${price.toString().replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), ',')}đ';
   }
 }
 

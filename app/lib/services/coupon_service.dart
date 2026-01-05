@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/coupon_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CouponService {
   // Singleton pattern
@@ -77,6 +78,14 @@ class CouponService {
       // Kiểm tra đơn tối thiểu (Logic này nên check lại ở Provider cho chắc)
       if (orderTotal < coupon.minOrderValue) {
          throw Exception("Đơn hàng chưa đạt giá trị tối thiểu");
+      }
+
+      // Kiểm tra User cho phép (Private Voucher)
+      if (coupon.allowedUserIds.isNotEmpty) {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser == null || !coupon.allowedUserIds.contains(currentUser.uid)) {
+          throw Exception("Mã này không áp dụng cho tài khoản của bạn");
+        }
       }
 
       return coupon;

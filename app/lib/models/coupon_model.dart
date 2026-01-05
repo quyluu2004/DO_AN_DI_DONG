@@ -9,6 +9,7 @@ class CouponModel {
   final String id;
   final String code;        // Mã: SALE50
   final String title;       // Tên: Giảm 50% áo thun
+  final String description; // Mô tả thêm (VD: tối đa 10k)
   final CouponType type;    // Loại voucher
   final String discountType; // 'percent' hoặc 'fixed'
   final double discountValue; // Giá trị: 10 (10%) hoặc 50000 (50k)
@@ -26,6 +27,7 @@ class CouponModel {
     required this.id,
     required this.code,
     required this.title,
+    this.description = '',
     this.type = CouponType.orderDiscount,
     required this.discountType,
     required this.discountValue,
@@ -38,12 +40,16 @@ class CouponModel {
     required this.endDate,
     this.isFlashSale = false,
     this.endTime,
+    this.allowedUserIds = const [],
   });
+
+  final List<String> allowedUserIds; // Danh sách user được phép dùng (Empty = All)
 
   Map<String, dynamic> toMap() {
     return {
       'code': code.toUpperCase(),
       'title': title,
+      'description': description,
       'type': type == CouponType.freeShip ? 'freeShip' : 'orderDiscount',
       'discountType': discountType,
       'discountValue': discountValue,
@@ -56,6 +62,7 @@ class CouponModel {
       'endDate': Timestamp.fromDate(endDate),
       'isFlashSale': isFlashSale,
       'endTime': endTime != null ? Timestamp.fromDate(endTime!) : null,
+      'allowedUserIds': allowedUserIds,
     };
   }
 
@@ -65,6 +72,7 @@ class CouponModel {
       id: doc.id,
       code: map['code'] ?? '',
       title: map['title'] ?? '',
+      description: map['description'] ?? '',
       type: (map['type'] == 'freeShip') ? CouponType.freeShip : CouponType.orderDiscount,
       discountType: map['discountType'] ?? 'fixed',
       discountValue: (map['discountValue'] ?? 0).toDouble(),
@@ -77,6 +85,7 @@ class CouponModel {
       endDate: (map['endDate'] as Timestamp).toDate(),
       isFlashSale: map['isFlashSale'] ?? false,
       endTime: map['endTime'] != null ? (map['endTime'] as Timestamp).toDate() : null,
+      allowedUserIds: List<String>.from(map['allowedUserIds'] ?? []),
     );
   }
 }

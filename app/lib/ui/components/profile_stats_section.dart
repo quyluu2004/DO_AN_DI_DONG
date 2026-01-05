@@ -14,7 +14,7 @@ class ProfileStatsSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       color: Colors.white,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Expanded(
             child: StreamBuilder<List<CouponModel>>(
@@ -42,6 +42,7 @@ class ProfileStatsSection extends StatelessWidget {
               },
             ),
           ),
+          Container(width: 1, height: 40, color: Colors.grey[200]), // Optional Divider
           Expanded(
             child: StreamBuilder<UserModel?>(
               stream: UserService.instance.currentUserProfileStream(),
@@ -50,12 +51,6 @@ class ProfileStatsSection extends StatelessWidget {
                  return _buildStatItem(context, "$points", "Điểm", icon: Icons.star_border, onTap: () {});
               }
             ),
-          ),
-          Expanded(
-            child: _buildStatItem(context, "", "Ví", icon: Icons.account_balance_wallet_outlined, isIconOnly: true, onTap: () {}),
-          ),
-          Expanded(
-            child: _buildStatItem(context, "", "Quà tặng", icon: Icons.card_giftcard, isIconOnly: true, onTap: () {}),
           ),
         ],
       ),

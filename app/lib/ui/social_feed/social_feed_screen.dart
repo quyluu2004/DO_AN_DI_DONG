@@ -16,7 +16,7 @@ class SocialFeedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Style Feed', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text('Bài đăng', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

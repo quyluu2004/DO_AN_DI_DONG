@@ -244,4 +244,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get noProductAvailable => 'Không có sản phẩm nào.';
+
+  @override
+  String get allProducts => 'Tất cả sản phẩm';
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'dashboard/admin_dashboard.dart';
 import 'products/admin_products_screen.dart';
 import 'orders/admin_orders_screen.dart';
 import 'marketing/admin_coupon_screen.dart';
@@ -21,7 +20,6 @@ class _AdminLayoutState extends State<AdminLayout> {
   bool _isCollapsed = false;
 
   final List<Widget> _screens = [
-    const AdminDashboard(),
     const AdminProductsScreen(),
     const AdminOrdersScreen(),
     const AdminCustomersScreen(),
@@ -63,46 +61,39 @@ class _AdminLayoutState extends State<AdminLayout> {
                 // Menu Items
                 const SizedBox(height: 16),
                 _SidebarItem(
-                  icon: Icons.dashboard_outlined,
-                  label: 'Dashboard',
+                  icon: Icons.shopping_bag_outlined,
+                  label: 'Sản phẩm',
                   isSelected: _selectedIndex == 0,
                   isCollapsed: _isCollapsed,
                   onTap: () => setState(() => _selectedIndex = 0),
                 ),
                 _SidebarItem(
-                  icon: Icons.shopping_bag_outlined,
-                  label: 'Sản phẩm',
+                  icon: Icons.local_shipping_outlined,
+                  label: 'Đơn hàng',
                   isSelected: _selectedIndex == 1,
                   isCollapsed: _isCollapsed,
                   onTap: () => setState(() => _selectedIndex = 1),
                 ),
                 _SidebarItem(
-                  icon: Icons.local_shipping_outlined,
-                  label: 'Đơn hàng',
+                  icon: Icons.people_outline,
+                  label: 'Khách hàng',
                   isSelected: _selectedIndex == 2,
                   isCollapsed: _isCollapsed,
                   onTap: () => setState(() => _selectedIndex = 2),
                 ),
                 _SidebarItem(
-                  icon: Icons.people_outline,
-                  label: 'Khách hàng',
+                  icon: Icons.campaign_outlined,
+                  label: 'Marketing',
                   isSelected: _selectedIndex == 3,
                   isCollapsed: _isCollapsed,
                   onTap: () => setState(() => _selectedIndex = 3),
                 ),
-                _SidebarItem(
-                  icon: Icons.campaign_outlined,
-                  label: 'Marketing',
-                  isSelected: _selectedIndex == 4,
-                  isCollapsed: _isCollapsed,
-                  onTap: () => setState(() => _selectedIndex = 4),
-                ),
                  _SidebarItem(
                   icon: Icons.settings_outlined,
                   label: 'Cấu hình',
-                  isSelected: _selectedIndex == 5,
+                  isSelected: _selectedIndex == 4,
                   isCollapsed: _isCollapsed,
-                  onTap: () => setState(() => _selectedIndex = 5),
+                  onTap: () => setState(() => _selectedIndex = 4),
                 ),
                 
                 const Spacer(),
@@ -164,12 +155,11 @@ class _AdminLayoutState extends State<AdminLayout> {
 
   String _getPageTitle(int index) {
     switch (index) {
-      case 0: return 'Dashboard';
-      case 1: return 'Quản lý Sản phẩm';
-      case 2: return 'Đơn hàng';
-      case 3: return 'Khách hàng';
-      case 4: return 'Marketing & Banner';
-      case 5: return 'Cấu hình';
+      case 0: return 'Quản lý Sản phẩm';
+      case 1: return 'Đơn hàng';
+      case 2: return 'Khách hàng';
+      case 3: return 'Marketing & Banner';
+      case 4: return 'Cấu hình';
       default: return 'Admin Portal';
     }
   }

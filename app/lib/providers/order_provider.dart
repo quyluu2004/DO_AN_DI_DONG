@@ -19,26 +19,60 @@ class OrderProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      await _db.collection('orders').doc(order.id).set(order.toMap());
+      String? validationError;
+
+      await _db.runTransaction((transaction) async {
+        // 1. Check Stock for ALL items first
+        for (final item in order.items) {
+          final productRef = _db.collection('products').doc(item.productId);
+          final snapshot = await transaction.get(productRef);
+
+          if (!snapshot.exists) {
+            validationError = "Sản phẩm '${item.productName}' không tồn tại!";
+            return; // Abort
+          }
+
+          final currentStock = (snapshot.data()?['stock'] as num?)?.toInt() ?? 0;
+          if (currentStock < item.quantity) {
+             validationError = "Sản phẩm '${item.productName}' không đủ hàng (Chỉ còn $currentStock, bạn mua ${item.quantity})";
+             return; // Abort
+          }
+        }
+
+        // 2. If all checks pass (and no validation error), Perform Updates
+        if (validationError == null) {
+          final orderRef = _db.collection('orders').doc(order.id);
+          transaction.set(orderRef, order.toMap());
+
+          for (final item in order.items) {
+            final productRef = _db.collection('products').doc(item.productId);
+            transaction.update(productRef, {
+              'stock': FieldValue.increment(-item.quantity),
+              'sales': FieldValue.increment(item.quantity),
+            });
+          }
+        }
+      });
       
-      // Deduct points if used
-      // Deduct points if used
+      // Check if validation failed inside transaction
+      if (validationError != null) {
+        throw Exception(validationError);
+      }
+      
+      // Deduct points if used (Outside transaction as it might involve different logic/collection, 
+      // but ideally should be inside if points are critical. Keeping outside for now as per previous logic)
       if (order.pointsUsed > 0) {
         try {
           await LoyaltyService.instance.deductPoints(order.userId, order.pointsUsed);
         } catch (e) {
           print("Error deducting points: $e");
-          // Optional: Revert order creation or just log? 
-          // For now, let's just log it to avoid blocking the order if points fail (though this effectively gives free points).
-          // Better: throw a clearer exception.
-          throw Exception("Lỗi trừ điểm: $e");
         }
       }
 
       // Local update
       _orders.insert(0, order);
     } catch (e) {
-      _error = e.toString();
+      _error = e.toString().replaceAll('Exception: ', ''); // Clean error message
       rethrow;
     } finally {
       _isLoading = false;

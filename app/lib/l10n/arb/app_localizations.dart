@@ -565,6 +565,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No products available.'**
   String get noProductAvailable;
+
+  /// No description provided for @allProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'All Products'**
+  String get allProducts;
 }
 
 class _AppLocalizationsDelegate

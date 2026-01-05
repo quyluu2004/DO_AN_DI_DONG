@@ -75,6 +75,7 @@ class ProductService {
     String sortBy = 'createdAt',
     bool ascending = false,
     int? limit,
+    bool onlyDiscounted = false, // [NEW] Filter by discounted items
   }) {
     Query<Map<String, dynamic>> query = _productsCol;
 
@@ -101,8 +102,15 @@ class ProductService {
       if (category == 'Nữ') dbCategory = 'Women';
       if (category == 'Kid') dbCategory = 'Kids'; // "Kid" or "Kids"
       if (category == 'Phụ kiện') dbCategory = 'Accessories';
+      if (category == 'Túi xách') dbCategory = 'Bags';
+      if (category == 'Giày dép') dbCategory = 'Shoes';
 
       query = query.where('category', isEqualTo: dbCategory);
+    }
+
+    // Filter only discounted
+    if (onlyDiscounted) {
+      query = query.where('discountPrice', isGreaterThan: 0);
     }
 
     // Sort

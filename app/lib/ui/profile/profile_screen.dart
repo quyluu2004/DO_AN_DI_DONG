@@ -22,6 +22,7 @@ import '../components/profile_stats_section.dart'; // [NEW] Import widget mới
 import '../settings/settings_screen.dart'; // [NEW]
 import 'package:app/l10n/arb/app_localizations.dart'; // [NEW]
 
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -209,6 +210,8 @@ class _ProfileHeader extends StatelessWidget {
     );
   }
 
+
+
   void _showSettings(BuildContext context) {
      showModalBottomSheet(
        context: context,
@@ -365,16 +368,15 @@ class _ServicesSection extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _ServiceItem(icon: Icons.headset_mic_outlined, label: AppLocalizations.of(context)!.support), // localized
-          _ServiceItem(
-            icon: Icons.calendar_today_outlined, 
-            label: AppLocalizations.of(context)!.checkIn, // localized
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoyaltyScreen())),
-          ),
           _ServiceItem(
             icon: Icons.post_add_outlined, 
             label: AppLocalizations.of(context)!.posts, // localized
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPostsScreen())),
+          ),
+          _ServiceItem(
+            icon: Icons.calendar_today_outlined, 
+            label: AppLocalizations.of(context)!.checkIn, // localized
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoyaltyScreen())),
           ),
           _ServiceItem(icon: Icons.shield_outlined, label: AppLocalizations.of(context)!.policies), // localized
         ],
@@ -420,8 +422,6 @@ class _EngagementSection extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-             Expanded(child: _EngagementItem(label: AppLocalizations.of(context)!.following, subLabel: '0 shop', icon: Icons.storefront_outlined)), // localized
-             const VerticalDivider(),
              Expanded(
                child: Consumer<HistoryProvider>(
                  builder: (_, history, __) => _EngagementItem(
