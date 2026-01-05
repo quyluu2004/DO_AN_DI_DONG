@@ -4,7 +4,7 @@ import '../../services/ui_service.dart';
 import 'banner_manager.dart';
 import 'announcement_manager.dart';
 import 'flash_sale_manager.dart';
-import 'promo_manager.dart';
+
 
 class AdminInterfaceScreen extends StatelessWidget {
   const AdminInterfaceScreen({super.key});
@@ -25,7 +25,7 @@ class AdminInterfaceScreen extends StatelessWidget {
         final config = snapshot.data ?? HomeConfig.empty();
 
         return DefaultTabController(
-          length: 4,
+          length: 3,
           child: Column(
             children: [
               const TabBar(
@@ -34,7 +34,6 @@ class AdminInterfaceScreen extends StatelessWidget {
                   Tab(text: 'Banner'),
                   Tab(text: 'Announcement'),
                   Tab(text: 'Flash Sale'),
-                  Tab(text: 'Promo'),
                 ],
               ),
               Expanded(
@@ -51,10 +50,6 @@ class AdminInterfaceScreen extends StatelessWidget {
                     SingleChildScrollView(
                       padding: const EdgeInsets.all(24),
                       child: FlashSaleManager(initialConfig: config.flashSale),
-                    ),
-                    SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: PromoManager(initialConfig: config.promoBanner),
                     ),
                   ],
                 ),

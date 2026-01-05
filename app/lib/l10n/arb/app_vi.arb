@@ -78,5 +78,14 @@
     "outerwear": "Khoác",
     "shoes": "Giày",
     "noProductAvailable": "Không có sản phẩm nào.",
-    "allProducts": "Tất cả sản phẩm"
+    "allProducts": "Tất cả sản phẩm",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "changePasswordSuccess": "Đổi mật khẩu thành công!",
+    "passwordMismatch": "Mật khẩu xác nhận không khớp.",
+    "enterCurrentPassword": "Vui lòng nhập mật khẩu hiện tại.",
+    "enterNewPassword": "Vui lòng nhập mật khẩu mới.",
+    "enterConfirmPassword": "Vui lòng xác nhận mật khẩu mới.",
+    "passwordLengthError": "Mật khẩu phải có ít nhất 6 ký tự."
 }

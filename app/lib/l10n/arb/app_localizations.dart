@@ -571,6 +571,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All Products'**
   String get allProducts;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Password'**
+  String get currentPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get newPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm New Password'**
+  String get confirmPassword;
+
+  /// No description provided for @changePasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed successfully!'**
+  String get changePasswordSuccess;
+
+  /// No description provided for @passwordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation password does not match.'**
+  String get passwordMismatch;
+
+  /// No description provided for @enterCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter current password.'**
+  String get enterCurrentPassword;
+
+  /// No description provided for @enterNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter new password.'**
+  String get enterNewPassword;
+
+  /// No description provided for @enterConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm new password.'**
+  String get enterConfirmPassword;
+
+  /// No description provided for @passwordLengthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters.'**
+  String get passwordLengthError;
 }
 
 class _AppLocalizationsDelegate

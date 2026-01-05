@@ -78,5 +78,14 @@
     "outerwear": "Outerwear",
     "shoes": "Shoes",
     "noProductAvailable": "No products available.",
-    "allProducts": "All Products"
+    "allProducts": "All Products",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "changePasswordSuccess": "Password changed successfully!",
+    "passwordMismatch": "Confirmation password does not match.",
+    "enterCurrentPassword": "Please enter current password.",
+    "enterNewPassword": "Please enter new password.",
+    "enterConfirmPassword": "Please confirm new password.",
+    "passwordLengthError": "Password must be at least 6 characters."
 }

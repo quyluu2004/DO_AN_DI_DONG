@@ -7,6 +7,7 @@ import '../../providers/locale_provider.dart';
 import '../../models/user_model.dart'; // [NEW]
 import '../../services/user_service.dart'; // [NEW]
 import '../profile/edit_profile_screen.dart'; // [NEW]
+import 'change_password_screen.dart'; // [NEW]
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -88,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: Text(l10n.changePassword),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tính năng đang phát triển')));
+               Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordScreen()));
             },
           ),
           

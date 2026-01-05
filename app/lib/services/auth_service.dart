@@ -111,6 +111,24 @@ class AuthService {
       throw AuthServiceException('Lỗi không xác định: $e');
     }
   }
+  /// Đổi mật khẩu
+  Future<void> changePassword({required String currentPassword, required String newPassword}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw AuthServiceException('Chưa đăng nhập.');
+
+    try {
+      // 1. Re-authenticate
+      final cred = EmailAuthProvider.credential(email: user.email!, password: currentPassword);
+      await user.reauthenticateWithCredential(cred);
+
+      // 2. Update password
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      throw AuthServiceException.fromFirebase(e);
+    } catch (e) {
+      throw AuthServiceException('Lỗi đổi mật khẩu: $e');
+    }
+  }
 }
 
 /// Exception đơn giản hoá thông báo lỗi Auth cho UI.

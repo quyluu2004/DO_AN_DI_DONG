@@ -247,4 +247,31 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get allProducts => 'Tất cả sản phẩm';
+
+  @override
+  String get currentPassword => 'Mật khẩu hiện tại';
+
+  @override
+  String get newPassword => 'Mật khẩu mới';
+
+  @override
+  String get confirmPassword => 'Xác nhận mật khẩu mới';
+
+  @override
+  String get changePasswordSuccess => 'Đổi mật khẩu thành công!';
+
+  @override
+  String get passwordMismatch => 'Mật khẩu xác nhận không khớp.';
+
+  @override
+  String get enterCurrentPassword => 'Vui lòng nhập mật khẩu hiện tại.';
+
+  @override
+  String get enterNewPassword => 'Vui lòng nhập mật khẩu mới.';
+
+  @override
+  String get enterConfirmPassword => 'Vui lòng xác nhận mật khẩu mới.';
+
+  @override
+  String get passwordLengthError => 'Mật khẩu phải có ít nhất 6 ký tự.';
 }

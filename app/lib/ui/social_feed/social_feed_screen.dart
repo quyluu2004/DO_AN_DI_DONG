@@ -129,7 +129,59 @@ class _FeedPostItemState extends State<FeedPostItem> {
                 ],
               ),
               const Spacer(),
-              IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+              if (user != null && user.uid == widget.post.authorId)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) async {
+                    if (value == 'delete') {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Xóa bài viết?'),
+                          content: const Text('Hành động này không thể hoàn tác.'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        try {
+                          await FeedService.instance.deletePost(widget.post.id);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Đã xóa bài viết')),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Lỗi: $e')),
+                            );
+                          }
+                        }
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Xóa bài viết', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              else
+                IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
             ],
           ),
         ),
@@ -185,10 +237,6 @@ class _FeedPostItemState extends State<FeedPostItem> {
                 icon: const Icon(Icons.chat_bubble_outline, size: 28),
                 onPressed: () => _showComments(context),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.send_outlined, size: 28),
-              const Spacer(),
-              const Icon(Icons.bookmark_border, size: 28),
             ],
           ),
         ),

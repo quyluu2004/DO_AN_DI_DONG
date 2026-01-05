@@ -217,8 +217,7 @@ class _HomeTabState extends State<_HomeTab> {
                   ),
                 ),
 
-                // 8. Promo Banner
-                SliverToBoxAdapter(child: _PromoBanner()),
+
                 
                 // 9. Recommendation Grid
                 _ProductGrid(
@@ -408,39 +407,6 @@ class _ProductCard extends StatelessWidget {
 }
 
 // ... unchanged classes ...
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<HomeConfig>(
-      stream: UIService.instance.getHomeConfigStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        final config = snapshot.data!.promoBanner;
-        
-        if (config.imageUrl.isEmpty) return const SizedBox.shrink();
-
-        return GestureDetector(
-          onTap: () {
-            // Handle navigation based on config.destination
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            height: 150,
-            width: double.infinity,
-            child: Image.network(
-              config.imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
 // ---------------- RESTORED CLASSES ----------------
 
 class _HomeHeader extends StatelessWidget {
